@@ -19,17 +19,7 @@ This is a **full-featured LVGL v9.4.0 component** for ESPHome
 
 ## 🚀 Quick Start
 
-### Installation
 
-```yaml
-external_components:
-  - source:
-      type: git
-      url: https://github.com/youkorr/test2_esp_video_esphome
-    components:
-      - lvgl  # ← LVGL v9.4 with ThorVG
-
-# That's it! ThorVG/SVG/Lottie are enabled automatically
 ```
 
 ### Basic Configuration
@@ -257,31 +247,6 @@ button:
 
 ## 🔧 Advanced Configuration
 
-### ESP32-P4 Optimization
-
-```yaml
-lvgl:
-  color_depth: 16  # RGB565 for best performance
-  buffer_size: 100%  # Full screen buffer for smooth rendering
-
-  # Enable DMA for display
-  displays:
-    - platform: rgb
-      id: my_display
-      dimensions:
-        width: 1024
-        height: 600
-      dma: true  # Hardware DMA for faster updates
-```
-
-### PSRAM Configuration
-
-```yaml
-esphome:
-  platformio_options:
-    board_build.psram_type: "opi_opi"  # Octal PSRAM for ESP32-P4
-    board_build.flash_mode: "qio"
-```
 
 ### Custom Fonts
 
