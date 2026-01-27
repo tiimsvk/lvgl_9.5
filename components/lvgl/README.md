@@ -49,13 +49,13 @@ lvgl:
 
         # SVG image (vector graphics)
         - image:
-            src: "S:/icons/sun.svg"  # S: = SD card
+            src: "/sdcard/icons/sun.svg"  # S: = SD card
             width: 64
             height: 64
 
         # Lottie animation (smooth 60 FPS)
         - lottie:
-            src: "S:/animations/loading.json"
+            src: "/sdcard/animations/loading.json"
             loop: true
             autoplay: true
 ```
@@ -74,9 +74,6 @@ lvgl:
 | **Lottie** | ✅ | Vector animations (JSON) |
 | **PNG** | ✅ | Via libpng |
 | **BMP** | ✅ | Native support |
-| **GIF** | ✅ | Animated GIFs |
-| **JPEG** | ✅ | Via tjpeg or custom decoder |
-
 ### Widget Support (28+ widgets)
 
 - ✅ **Basic**: Label, Button, Image, Canvas
