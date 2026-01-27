@@ -297,7 +297,7 @@ network_camera:
 
 #network_camera:
   #- id: security_cam_1
-    #url: "rtsp://Tapoone:Tapoone132@192.168.1.56:554/stream1"
+    #url: 
     #protocol: rtsp
     #width: 320
     #height: 240
@@ -305,7 +305,7 @@ network_camera:
 
 #network_camera:
   #- id: security_cam_1
-    #url: "http://192.168.1.38:1984/api/frame.jpeg?src=frigate1&width=320&height=240"  # URL MJPEG (à vérifier)
+    #url:   # URL MJPEG (à vérifier)
     #protocol: mjpeg
     #width: 320
     #height: 240
@@ -314,7 +314,7 @@ network_camera:
 
 #network_camera:
   #- id: security_cam_1
-    #url: "rtsp://192.168.1.38:8554/frigate1_esp32"  # go2rtc stream2 @ 640x360
+    #url: 
     #protocol: rtsp
     #width: 640
     #height: 360
@@ -496,23 +496,6 @@ external_components:
     components: [mipi_dsi]
     refresh: always
 
-
-  #- source: github://pr#12127
-    #components: [esp32]
-    #refresh: 1h
-  #- source:
-      #type: git
-      #url: https://github.com/youkorr/waveshare_ek79007
-      #ref: main
-    #components: [waveshare_ek79007]
-    #refresh
-
-  #- source:
-      #type: git
-      #url: https://github.com/youkorr/lvgl_9.4
-      #ref: main
-    #components: [lvgl, font, image]
-    #refresh: always
 
 
   - source:
