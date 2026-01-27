@@ -706,9 +706,11 @@ void lv_mem_init() {}
 void lv_mem_deinit() {}
 
 #if defined(USE_HOST) || defined(USE_RP2040) || defined(USE_ESP8266)
-// CRITICAL: LVGL 9.4 requires 64-byte alignment for draw buffers (LV_DRAW_BUF_ALIGN=64)
-// Standard malloc() only guarantees 8 or 16 byte alignment, which causes
-// "Data is not aligned, ignored" warnings from lv_draw_buf_init()
+// Memory alignment for draw buffers on non-ESP32 platforms.
+// We use 64-byte alignment for optimal performance even though LV_DRAW_BUF_ALIGN
+// is set to 4 (to avoid warnings from LVGL's internal stack/static buffers).
+// Standard malloc() only guarantees 8-16 byte alignment, so we implement
+// our own aligned allocation.
 static constexpr size_t LVGL_ALIGNMENT = 64;
 
 // Store original pointer before aligned address for proper freeing
@@ -785,7 +787,9 @@ void lv_mem_monitor_core(lv_mem_monitor_t *mon_p) {
 
 void *lv_malloc_core(size_t size) {
   void *ptr;
-  // CRITICAL: LVGL 9.4 requires 64-byte alignment for draw buffers
+  // Use 64-byte alignment for optimal ESP32 PSRAM/cache performance.
+  // Note: LV_DRAW_BUF_ALIGN is set to 4 to avoid LVGL warnings from
+  // internal stack/static buffers, but heap allocations use 64-byte alignment.
   constexpr size_t LVGL_ALIGNMENT = 64;
 
   // BUGFIX: Don't modify global cap_bits - use local variable

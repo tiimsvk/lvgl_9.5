@@ -216,8 +216,12 @@ async def to_code(configs):
 
     # suppress default enabling of extra widgets
     df.add_define("_LV_KCONFIG_PRESENT")
-    # Always enable - lots of things use it.
-    df.add_define("LV_DRAW_BUF_ALIGN", "64")  # ESP32-P4 requires 64-byte alignment for PSRAM/cache
+    # Memory alignment configuration for LVGL 9.4
+    # LV_DRAW_BUF_ALIGN: Set to minimum (4) to avoid warnings from LVGL's internal
+    # temporary buffers (stack/static) that can't be aligned to higher values.
+    # Our custom lv_malloc_core() always allocates with 64-byte alignment on ESP32
+    # for optimal PSRAM/cache performance, regardless of this setting.
+    df.add_define("LV_DRAW_BUF_ALIGN", "4")
     df.add_define("LV_USE_STDLIB_MALLOC", "LV_STDLIB_CUSTOM")
 
     # ============================================
