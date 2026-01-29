@@ -24,8 +24,11 @@ from esphome.core import Lambda
 
 from ..automation import action_to_code
 from ..defines import (
+    CONF_CURSOR,
+    CONF_INDICATOR,
     CONF_ITEMS,
     CONF_MAIN,
+    CONF_SCROLLBAR,
     call_lambda,
     literal,
 )
@@ -75,6 +78,19 @@ UPDATE_MODES = {
     UPDATE_MODE_CIRCULAR: "LV_CHART_UPDATE_MODE_CIRCULAR",
 }
 
+# Axis options for series
+CONF_AXIS = "axis"
+CHART_AXES = {
+    "PRIMARY_Y": "LV_CHART_AXIS_PRIMARY_Y",
+    "SECONDARY_Y": "LV_CHART_AXIS_SECONDARY_Y",
+    "PRIMARY_X": "LV_CHART_AXIS_PRIMARY_X",
+    "SECONDARY_X": "LV_CHART_AXIS_SECONDARY_X",
+}
+
+# Additional configuration keys
+CONF_DIV_LINE_COUNT_HOR = "div_line_count_hor"
+CONF_DIV_LINE_COUNT_VER = "div_line_count_ver"
+
 # Axis configuration
 AXIS_SCHEMA = cv.Schema(
     {
@@ -89,8 +105,8 @@ SERIES_SCHEMA = cv.Schema(
     {
         cv.Required(CONF_ID): cv.declare_id(lv_chart_series_t_ptr),
         cv.Optional(CONF_COLOR): lv_color,
+        cv.Optional(CONF_AXIS, default="PRIMARY_Y"): cv.enum(CHART_AXES, upper=True),
         cv.Optional(CONF_POINTS): cv.ensure_list(lv_int),
-        cv.Optional(CONF_TYPE): cv.enum(CHART_TYPES, upper=True),
     }
 )
 
@@ -102,6 +118,8 @@ CHART_SCHEMA = cv.Schema(
         cv.Optional(CONF_UPDATE_MODE, default=UPDATE_MODE_SHIFT): cv.enum(
             UPDATE_MODES, upper=True
         ),
+        cv.Optional(CONF_DIV_LINE_COUNT_HOR, default=3): cv.positive_int,
+        cv.Optional(CONF_DIV_LINE_COUNT_VER, default=5): cv.positive_int,
         cv.Optional(CONF_SERIES): cv.ensure_list(SERIES_SCHEMA),
         # Axes configuration
         cv.Optional(CONF_AXIS_PRIMARY_Y): AXIS_SCHEMA,
@@ -117,7 +135,7 @@ class ChartType(WidgetType):
         super().__init__(
             CONF_CHART,
             lv_chart_t,
-            (CONF_MAIN, CONF_ITEMS),
+            (CONF_MAIN, CONF_ITEMS, CONF_INDICATOR, CONF_CURSOR, CONF_SCROLLBAR),
             CHART_SCHEMA,
             modify_schema={},
         )
@@ -137,6 +155,11 @@ class ChartType(WidgetType):
         # Set update mode
         update_mode = UPDATE_MODES[config[CONF_UPDATE_MODE]]
         lv.chart_set_update_mode(w.obj, literal(update_mode))
+
+        # Set division line counts (horizontal and vertical grid lines)
+        div_hor = config[CONF_DIV_LINE_COUNT_HOR]
+        div_ver = config[CONF_DIV_LINE_COUNT_VER]
+        lv.chart_set_div_line_count(w.obj, div_hor, div_ver)
 
         # Configure axes
         await self._configure_axis(
@@ -158,7 +181,7 @@ class ChartType(WidgetType):
                 await self._add_series(w, series)
 
     async def _configure_axis(self, w: Widget, config, axis_key, axis_const):
-        """Configure a specific axis"""
+        """Configure a specific axis range"""
         if axis_config := config.get(axis_key):
             axis_literal = literal(axis_const)
 
@@ -168,11 +191,6 @@ class ChartType(WidgetType):
                 max_val = await lv_int.process(axis_config[CONF_MAX_VALUE])
                 lv.chart_set_range(w.obj, axis_literal, min_val, max_val)
 
-            # Set division line count if specified
-            if CONF_DIV_LINE_COUNT in axis_config:
-                div_count = axis_config[CONF_DIV_LINE_COUNT]
-                lv.chart_set_div_line_count(w.obj, div_count, div_count)
-
     async def _add_series(self, w: Widget, series_config):
         """Add a data series to the chart"""
         # Get series color if specified, otherwise use default
@@ -181,12 +199,15 @@ class ChartType(WidgetType):
         else:
             color = literal("lv_palette_main(LV_PALETTE_RED)")
 
+        # Get axis for this series
+        axis = CHART_AXES[series_config[CONF_AXIS]]
+
         # Declare series pointer variable and add series to chart
         series_id = series_config[CONF_ID]
         series_var = lv_Pvariable(cg.global_ns.struct("lv_chart_series_t"), series_id)
         lv_assign(
             series_var,
-            lv_expr.chart_add_series(w.obj, color, literal("LV_CHART_AXIS_PRIMARY_Y")),
+            lv_expr.chart_add_series(w.obj, color, literal(axis)),
         )
 
         # Set initial points if provided
