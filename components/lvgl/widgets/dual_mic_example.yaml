@@ -54,9 +54,18 @@ microphone:
           int num_samples = x.size() / 2;  // 2 bytes per sample
 
           if (num_samples >= 2) {
-            // Get one sample for each channel to update display
-            id(audio_sample_left) = samples[0];
-            id(audio_sample_right) = samples[1];
+            // Amplify samples for better visualization (x8 gain)
+            int32_t left = samples[0] * 8;
+            int32_t right = samples[1] * 8;
+
+            // Clamp to int16 range
+            if (left > 32767) left = 32767;
+            if (left < -32768) left = -32768;
+            if (right > 32767) right = 32767;
+            if (right < -32768) right = -32768;
+
+            id(audio_sample_left) = left;
+            id(audio_sample_right) = right;
           }
 
 # =============================================================================
