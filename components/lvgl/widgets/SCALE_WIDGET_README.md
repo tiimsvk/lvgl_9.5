@@ -4,6 +4,8 @@
 
 The Scale widget is a versatile LVGL v9.4 component for displaying measurement scales in various orientations. It replaces the obsolete Meter widget from LVGL v8.x and provides more flexibility for creating gauges, thermometers, progress indicators, and other measurement displays.
 
+**IMPORTANT**: The Scale widget only displays tick marks and labels (static). For animated gauges, combine Scale + Arc widgets.
+
 ## Features
 
 - **Multiple scale modes**: horizontal, vertical, and circular (round inner/outer)
@@ -87,6 +89,126 @@ scale:
       width: 6
 ```
 
+## Creating Animated Gauges (Scale + Arc)
+
+The Scale widget is static - it only displays ticks and labels. To create an animated gauge:
+
+1. Use **Scale** for tick marks and labels (static background)
+2. Use **Arc** overlaid on Scale for the animated indicator
+3. Update the Arc value to animate the gauge
+
+### Example: Animated Speedometer
+
+```yaml
+globals:
+  - id: speed_value
+    type: int
+    initial_value: "0"
+
+interval:
+  - interval: 50ms
+    then:
+      - lambda: |-
+          static int direction = 1;
+          id(speed_value) += direction * 2;
+          if (id(speed_value) >= 200) direction = -1;
+          if (id(speed_value) <= 0) direction = 1;
+      - lvgl.arc.update:
+          id: speed_arc
+          value: !lambda 'return id(speed_value);'
+          animated: true
+      - lvgl.label.update:
+          id: speed_label
+          text:
+            format: "%d"
+            args: [id(speed_value)]
+
+lvgl:
+  pages:
+    - widgets:
+        # Scale for tick marks and labels (static)
+        - scale:
+            id: speed_scale
+            align: CENTER
+            width: 280
+            height: 280
+            mode: ROUND_OUTER
+            min_value: 0
+            max_value: 200
+            rotation: 135
+            angle_range: 270
+            ticks:
+              count: 21
+              width: 2
+              length: 10
+              color: 0x404040
+              major:
+                stride: 2
+                width: 4
+                length: 20
+                color: 0xFFFFFF
+                label_show: true
+                label_gap: 12
+            sections:
+              - id: speed_safe
+                range_from: 0
+                range_to: 120
+                color: 0x00FF00
+                width: 6
+              - id: speed_caution
+                range_from: 120
+                range_to: 160
+                color: 0xFFFF00
+                width: 6
+              - id: speed_danger
+                range_from: 160
+                range_to: 200
+                color: 0xFF0000
+                width: 6
+
+        # Arc for animated indicator (overlay on scale)
+        - arc:
+            id: speed_arc
+            align: CENTER
+            width: 220
+            height: 220
+            min_value: 0
+            max_value: 200
+            value: 0
+            rotation: 135        # Same as scale
+            bg_start_angle: 0
+            bg_end_angle: 270    # Same as scale angle_range
+            mode: NORMAL
+            arc_width: 20
+            indicator:
+              arc_color: 0x00FF00
+              arc_width: 20
+            bg_arc_color: 0x1a1a2e
+
+        # Value display
+        - label:
+            id: speed_label
+            align: CENTER
+            y: 20
+            text: "0"
+            text_color: 0x00FF00
+            text_font: montserrat_36
+
+        - label:
+            align: CENTER
+            y: 55
+            text: "km/h"
+            text_color: 0x808080
+```
+
+### Key Points for Scale + Arc Alignment
+
+1. **Same rotation**: Arc and Scale must have the same `rotation` value
+2. **Same angle range**: Arc's `bg_end_angle` should match Scale's `angle_range`
+3. **Same min/max**: Use identical `min_value` and `max_value`
+4. **Arc smaller**: Arc should be slightly smaller than Scale to fit inside
+5. **Same alignment**: Use `align: CENTER` for both (or matching x/y coordinates)
+
 ## Parts and Styling
 
 The scale widget has three main parts that can be styled independently:
@@ -130,57 +252,104 @@ scale:
 
 ## Usage Examples
 
-### Example 1: Speedometer (Circular Scale)
+### Example 1: Temperature Gauge with Sensor
 
 ```yaml
-scale:
-  id: speedometer
-  x: 50
-  y: 50
-  width: 200
-  height: 200
-  mode: ROUND_OUTER
-  min_value: 0
-  max_value: 200
-  rotation: 135               # Start at 135 degrees
-  angle_range: 270            # Cover 270 degrees
-  ticks:
-    count: 21                 # 21 ticks (every 10 km/h)
-    width: 2
-    length: 10
-    color: 0x808080
-    major:
-      stride: 5               # Major tick every 50 km/h
-      width: 4
-      length: 20
-      color: 0xFFFFFF
-      label_show: true
-  sections:
-    - id: normal_speed
-      range_from: 0
-      range_to: 120
-      color: 0x00FF00         # Green zone
-      width: 6
-    - id: high_speed
-      range_from: 120
-      range_to: 160
-      color: 0xFFFF00         # Yellow zone
-      width: 6
-    - id: overspeed
-      range_from: 160
-      range_to: 200
-      color: 0xFF0000         # Red zone
-      width: 6
+sensor:
+  - platform: homeassistant
+    id: temperature
+    entity_id: sensor.temperature
+    on_value:
+      then:
+        - lvgl.arc.update:
+            id: temp_arc
+            value: !lambda 'return (int)id(temperature).state;'
+            animated: true
+        - lvgl.label.update:
+            id: temp_label
+            text:
+              format: "%.1f°C"
+              args: [id(temperature).state]
+
+lvgl:
+  pages:
+    - widgets:
+        - scale:
+            id: temp_scale
+            x: 50
+            y: 50
+            width: 200
+            height: 200
+            mode: ROUND_OUTER
+            min_value: -10
+            max_value: 40
+            rotation: 135
+            angle_range: 270
+            ticks:
+              count: 11
+              width: 2
+              length: 8
+              color: 0x404040
+              major:
+                stride: 2
+                width: 3
+                length: 15
+                color: 0xFFFFFF
+                label_show: true
+            sections:
+              - id: temp_cold
+                range_from: -10
+                range_to: 15
+                color: 0x00BFFF
+                width: 4
+              - id: temp_comfort
+                range_from: 15
+                range_to: 26
+                color: 0x00FF00
+                width: 4
+              - id: temp_warm
+                range_from: 26
+                range_to: 40
+                color: 0xFF4500
+                width: 4
+
+        - arc:
+            id: temp_arc
+            x: 75
+            y: 75
+            width: 150
+            height: 150
+            min_value: -10
+            max_value: 40
+            value: 20
+            rotation: 135
+            bg_start_angle: 0
+            bg_end_angle: 270
+            mode: NORMAL
+            arc_width: 12
+            indicator:
+              arc_color: 0x00FF00
+              arc_width: 12
+            bg_arc_color: 0x1a1a2e
+
+        - label:
+            id: temp_label
+            x: 100
+            y: 145
+            width: 100
+            text_align: CENTER
+            text: "--.-°C"
+            text_color: 0x00FF00
 ```
 
-### Example 2: Temperature Scale (Vertical)
+### Example 2: Vertical Scale (Thermometer Style)
 
 ```yaml
 scale:
   id: thermometer
   x: 50
   y: 50
-  width: 50
+  width: 80
   height: 200
   mode: VERTICAL_LEFT
   min_value: -20
@@ -191,26 +360,27 @@ scale:
     length: 8
     color: 0x808080
     major:
-      stride: 3               # Major tick every ~15 degrees
+      stride: 3
       width: 3
       length: 12
       color: 0x000000
       label_show: true
+      label_gap: 6
   sections:
     - id: freezing
       range_from: -20
       range_to: 0
-      color: 0x0080FF         # Blue
+      color: 0x0080FF
       width: 5
     - id: normal
       range_from: 0
       range_to: 25
-      color: 0x00FF00         # Green
+      color: 0x00FF00
       width: 5
     - id: hot
       range_from: 25
       range_to: 50
-      color: 0xFF0000         # Red
+      color: 0xFF0000
       width: 5
 ```
 
@@ -221,51 +391,38 @@ scale:
   id: progress_scale
   x: 50
   y: 150
-  width: 300
-  height: 50
+  width: 400
+  height: 60
   mode: HORIZONTAL_TOP
   min_value: 0
   max_value: 100
   ticks:
-    count: 11                 # Ticks at 0, 10, 20, ..., 100
-    width: 2
-    length: 8
-    major:
-      stride: 5               # Major ticks at 0, 50, 100
-      width: 3
-      length: 15
-      label_show: true
-```
-
-### Example 4: Pressure Gauge (Round Inner)
-
-```yaml
-scale:
-  id: pressure_gauge
-  x: 50
-  y: 50
-  width: 180
-  height: 180
-  mode: ROUND_INNER
-  min_value: 0
-  max_value: 10
-  rotation: 135
-  angle_range: 270
-  ticks:
-    count: 21
+    count: 11
     width: 2
     length: 10
-    color: 0x808080
+    color: 0x404040
     major:
-      stride: 5
-      width: 4
-      length: 20
+      stride: 2
+      width: 3
+      length: 18
       color: 0xFFFFFF
       label_show: true
-  main:
-    arc_width: 8
-    arc_color: 0x333333
-    arc_opa: 0.5
+  sections:
+    - id: low_section
+      range_from: 0
+      range_to: 33
+      color: 0x0088FF
+      width: 4
+    - id: mid_section
+      range_from: 33
+      range_to: 66
+      color: 0x00FF88
+      width: 4
+    - id: high_section
+      range_from: 66
+      range_to: 100
+      color: 0xFF8800
+      width: 4
 ```
 
 ## Automation Actions
@@ -293,36 +450,18 @@ lvgl.scale.section.update:
   width: 8
 ```
 
-## Integration with Sensors
-
-The scale widget provides the visual scale, but typically you'll want to add an indicator (needle, arc, or line) to show the current value. Here's an example pattern:
-
-```yaml
-sensor:
-  - platform: template
-    name: "Speed"
-    id: speed_sensor
-    on_value:
-      then:
-        # Update needle position based on sensor value
-        # Note: You would need to create a separate indicator widget
-        # (arc, line, or image) and update its position
-        - lambda: |-
-            // Calculate needle angle based on speed_sensor->state
-            // and update needle position
-```
-
 ## Migration from Meter Widget
 
 If you're migrating from the LVGL v8.x meter widget:
 
 | Meter (v8.x) | Scale (v9.4) |
 |--------------|--------------|
-| `lv_meter_create()` | `lv_scale_create()` |
+| `lv_meter_create()` | `lv_scale_create()` + `lv_arc_create()` |
 | `lv_meter_set_scale_ticks()` | `ticks.count` configuration |
 | `lv_meter_set_scale_major_ticks()` | `ticks.major.stride` configuration |
 | `lv_meter_add_arc()` | `sections` configuration |
-| `lv_meter_add_needle_line()` | Separate line widget with rotation |
+| `lv_meter_add_needle_line()` | Use Arc widget with value update |
+| Automatic value indication | Manually update Arc value |
 
 ## API Reference
 
@@ -340,18 +479,25 @@ The scale widget implementation uses these LVGL v9.4 API functions:
 - `lv_scale_set_label_show(scale, show)` - Enable/disable labels
 - `lv_scale_add_section(scale)` - Add colored section
 - `lv_scale_section_set_range(section, start, end)` - Set section range
+- `lv_scale_section_set_style(section, part, style)` - Apply style to section
 
 ## Tips and Best Practices
 
 1. **Tick Count**: Choose tick counts that divide evenly into your value range for clean labeling
-2. **Major Tick Stride**: Typical values are 3, 5, or 10 depending on total tick count
+2. **Major Tick Stride**: Typical values are 2, 3, 5, or 10 depending on total tick count
 3. **Angle Range**: For circular scales, 270° provides good visibility (avoids bottom area)
 4. **Rotation**: 135° rotation (starting at bottom-left) is common for speedometer-style gauges
 5. **Section Width**: Make section lines wider than tick lines for better visibility
 6. **Label Gap**: Adjust based on your font size to prevent label overlap with ticks
 7. **Color Contrast**: Ensure good contrast between ticks, labels, and background
+8. **Arc Alignment**: When using Scale + Arc, keep rotation and angle_range identical
 
 ## Troubleshooting
+
+### Scale Not Animating
+- Scale widget is static - it only shows ticks/labels
+- Use Arc widget overlaid on Scale for animated indicator
+- Update the Arc value to animate
 
 ### Labels Not Showing
 - Ensure `label_show: true` in major tick configuration
@@ -359,9 +505,15 @@ The scale widget implementation uses these LVGL v9.4 API functions:
 - Verify label_gap is appropriate for your scale size
 
 ### Sections Not Visible
-- Ensure section width is greater than tick width
-- Check color opacity (use fully opaque colors like 0xFF0000 not 0x00FF0000)
+- Ensure section width is greater than 0
+- Check color is valid hex (0xRRGGBB)
 - Verify section ranges are within min/max values
+
+### Arc Not Aligned with Scale
+- Arc and Scale must have same `rotation` value
+- Arc's `bg_end_angle` should match Scale's `angle_range`
+- Use same `min_value` and `max_value` for both
+- Arc should be smaller than Scale (to fit inside)
 
 ### Ticks Overlapping
 - Reduce tick count
@@ -375,6 +527,6 @@ The scale widget implementation uses these LVGL v9.4 API functions:
 
 ## References
 
-- [LVGL v9.4 Scale Documentation](https://docs.lvgl.io/master/widgets/scale.html)
+- [LVGL v9.4 Scale Documentation](https://docs.lvgl.io/9.4/details/widgets/scale.html)
 - [ESPHome LVGL Component](https://esphome.io/components/lvgl/index.html)
-- [LVGL v9.4 Migration Guide](https://docs.lvgl.io/master/intro/migrate.html)
+- See `scale_example.yaml` for complete working examples
