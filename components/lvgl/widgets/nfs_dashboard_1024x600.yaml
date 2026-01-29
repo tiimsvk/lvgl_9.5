@@ -182,22 +182,23 @@ lvgl:
             # SPEEDOMETER (Left Side) - Position: x=80, centered at y=220
             # =================================================================
 
-            # Animated spinner around speedometer
+            # Animated spinner around speedometer (follows 270° gauge arc)
             - spinner:
                 id: speed_spinner
                 x: 60
                 y: 40
                 width: 360
                 height: 360
-                arc_length: 60
+                arc_length: 90
                 spin_time: 2s
+                rotation: 135
                 main:
-                  arc_width: 4
+                  arc_width: 6
                   arc_color: 0x001a1a
                 indicator:
-                  arc_width: 4
+                  arc_width: 6
                   arc_color: 0x00FFFF
-                  arc_opa: 50%
+                  arc_opa: 70%
 
             # Speed Scale with ticks and labels
             - scale:
@@ -287,22 +288,23 @@ lvgl:
             # TACHOMETER (Right Side) - Position: x=584, centered at y=220
             # =================================================================
 
-            # Animated spinner around tachometer
+            # Animated spinner around tachometer (follows 270° gauge arc)
             - spinner:
                 id: rpm_spinner
                 x: 604
                 y: 40
                 width: 360
                 height: 360
-                arc_length: 60
+                arc_length: 90
                 spin_time: 1.5s
+                rotation: 135
                 main:
-                  arc_width: 4
+                  arc_width: 6
                   arc_color: 0x001a1a
                 indicator:
-                  arc_width: 4
+                  arc_width: 6
                   arc_color: 0x00FFFF
-                  arc_opa: 50%
+                  arc_opa: 70%
 
             # RPM Scale with ticks and labels
             - scale:
