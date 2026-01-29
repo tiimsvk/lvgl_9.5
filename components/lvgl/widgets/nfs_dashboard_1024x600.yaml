@@ -182,28 +182,22 @@ lvgl:
             # SPEEDOMETER (Left Side) - Position: x=80, centered at y=220
             # =================================================================
 
-            # Outer decorative ring
-            - arc:
-                id: speed_outer_ring
+            # Animated spinner around speedometer
+            - spinner:
+                id: speed_spinner
                 x: 60
                 y: 40
                 width: 360
                 height: 360
-                min_value: 0
-                max_value: 100
-                value: 100
-                rotation: 135
-                start_angle: 0
-                end_angle: 270
-                mode: NORMAL
-                adjustable: false
-                indicator:
-                  arc_color: 0x00FFFF
-                  arc_width: 3
-                  arc_opa: 30%
+                arc_length: 60
+                spin_time: 2s
                 main:
+                  arc_width: 4
                   arc_color: 0x001a1a
-                  arc_width: 3
+                indicator:
+                  arc_width: 4
+                  arc_color: 0x00FFFF
+                  arc_opa: 50%
 
             # Speed Scale with ticks and labels
             - scale:
@@ -293,28 +287,22 @@ lvgl:
             # TACHOMETER (Right Side) - Position: x=584, centered at y=220
             # =================================================================
 
-            # Outer decorative ring
-            - arc:
-                id: rpm_outer_ring
+            # Animated spinner around tachometer
+            - spinner:
+                id: rpm_spinner
                 x: 604
                 y: 40
                 width: 360
                 height: 360
-                min_value: 0
-                max_value: 100
-                value: 100
-                rotation: 135
-                start_angle: 0
-                end_angle: 270
-                mode: NORMAL
-                adjustable: false
-                indicator:
-                  arc_color: 0x00FFFF
-                  arc_width: 3
-                  arc_opa: 30%
+                arc_length: 60
+                spin_time: 1.5s
                 main:
+                  arc_width: 4
                   arc_color: 0x001a1a
-                  arc_width: 3
+                indicator:
+                  arc_width: 4
+                  arc_color: 0x00FFFF
+                  arc_opa: 50%
 
             # RPM Scale with ticks and labels
             - scale:
