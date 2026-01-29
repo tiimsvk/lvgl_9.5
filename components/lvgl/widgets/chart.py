@@ -50,8 +50,8 @@ CONF_UPDATE_MODE = "update_mode"
 CONF_COLOR = "color"
 
 lv_chart_t = LvType("lv_chart_t")
-# Chart series type - declared as C++ struct pointer for ID registration
-lv_chart_series_t = cg.global_ns.struct("lv_chart_series_t")
+# Chart series type - use pointer type since lv_chart_series_t is forward-declared in LVGL
+lv_chart_series_t_ptr = cg.global_ns.struct("lv_chart_series_t").operator("ptr")
 
 # Chart types
 CHART_TYPE_NONE = "NONE"
@@ -87,7 +87,7 @@ AXIS_SCHEMA = cv.Schema(
 # Series configuration
 SERIES_SCHEMA = cv.Schema(
     {
-        cv.Required(CONF_ID): cv.declare_id(lv_chart_series_t),
+        cv.Required(CONF_ID): cv.declare_id(lv_chart_series_t_ptr),
         cv.Optional(CONF_COLOR): lv_color,
         cv.Optional(CONF_POINTS): cv.ensure_list(lv_int),
         cv.Optional(CONF_TYPE): cv.enum(CHART_TYPES, upper=True),
@@ -181,9 +181,9 @@ class ChartType(WidgetType):
         else:
             color = literal("lv_palette_main(LV_PALETTE_RED)")
 
-        # Declare series variable and add series to chart
+        # Declare series pointer variable and add series to chart
         series_id = series_config[CONF_ID]
-        series_var = cg.new_Pvariable(series_id)
+        series_var = lv_Pvariable(cg.global_ns.struct("lv_chart_series_t"), series_id)
         lv_assign(
             series_var,
             lv_expr.chart_add_series(w.obj, color, literal("LV_CHART_AXIS_PRIMARY_Y")),
@@ -208,7 +208,7 @@ CONF_SERIES_ID = "series_id"
 CHART_SET_NEXT_VALUE_SCHEMA = cv.Schema(
     {
         cv.Required(CONF_ID): cv.use_id(lv_chart_t),
-        cv.Required(CONF_SERIES_ID): cv.use_id(lv_chart_series_t),
+        cv.Required(CONF_SERIES_ID): cv.use_id(lv_chart_series_t_ptr),
         cv.Required(CONF_VALUE): cv.templatable(cv.int_),
     }
 )
