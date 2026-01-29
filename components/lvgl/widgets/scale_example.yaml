@@ -1,215 +1,1281 @@
-# ESPHome LVGL Scale Widget Example
-# Demonstrates all features of the LVGL v9.4 Scale widget
+# ESPHome LVGL Scale Widget Examples
+# =============================================================================
+# LVGL v9.4 Scale Widget - Complete Examples
+#
+# Scale Modes:
+#   - ROUND_OUTER: Circular with ticks outside
+#   - ROUND_INNER: Circular with ticks inside
+#   - HORIZONTAL_TOP: Horizontal with ticks on top
+#   - HORIZONTAL_BOTTOM: Horizontal with ticks on bottom
+#   - VERTICAL_LEFT: Vertical with ticks on left
+#   - VERTICAL_RIGHT: Vertical with ticks on right
+#
+# IMPORTANT: Scale widget only displays ticks and labels (static).
+# For animated gauges, combine Scale + Arc widgets.
+#
+# Actions:
+#   - lvgl.scale.update: Update scale properties
+#   - lvgl.scale.section.update: Update section color/range
+# =============================================================================
 
-# This example shows various scale configurations:
-# 1. Circular/Round scale (speedometer style)
-# 2. Horizontal scale (progress bar style)
-# 3. Vertical scale (thermometer style)
-# 4. Scale with colored sections (zones)
+globals:
+  # Animation counters for gauges
+  - id: speed_value
+    type: int
+    initial_value: "0"
+  - id: speed_direction
+    type: int
+    initial_value: "1"
+  - id: temp_value
+    type: int
+    initial_value: "20"
+  - id: pressure_value
+    type: int
+    initial_value: "5"
+  # Need for Speed Racing Dashboard
+  - id: nfs_speed
+    type: int
+    initial_value: "0"
+  - id: nfs_rpm
+    type: int
+    initial_value: "800"
+  - id: nfs_gear
+    type: int
+    initial_value: "1"
+  - id: nfs_accelerating
+    type: bool
+    initial_value: "true"
 
+# =============================================================================
+# SENSORS - Home Assistant Integration
+# =============================================================================
+sensor:
+  - platform: homeassistant
+    id: ha_temperature
+    entity_id: sensor.temperature
+    on_value:
+      then:
+        - lvgl.arc.update:
+            id: temp_arc
+            value: !lambda 'return (int)id(ha_temperature).state;'
+            animated: true
+        - lvgl.label.update:
+            id: temp_value_label
+            text:
+              format: "%.1f°C"
+              args: [id(ha_temperature).state]
+
+  - platform: homeassistant
+    id: ha_humidity
+    entity_id: sensor.humidity
+    on_value:
+      then:
+        - lvgl.arc.update:
+            id: humidity_arc
+            value: !lambda 'return (int)id(ha_humidity).state;'
+            animated: true
+        - lvgl.label.update:
+            id: humidity_value_label
+            text:
+              format: "%.0f%%"
+              args: [id(ha_humidity).state]
+
+# =============================================================================
+# ANIMATIONS - Demo gauges without sensors
+# =============================================================================
+interval:
+  # Speedometer animation (50ms)
+  - interval: 50ms
+    then:
+      - lambda: |-
+          id(speed_value) += id(speed_direction) * 2;
+          if (id(speed_value) >= 200) id(speed_direction) = -1;
+          if (id(speed_value) <= 0) id(speed_direction) = 1;
+      - lvgl.arc.update:
+          id: speed_arc
+          value: !lambda 'return id(speed_value);'
+          animated: true
+      - lvgl.label.update:
+          id: speed_value_label
+          text:
+            format: "%d"
+            args: [id(speed_value)]
+      # Change color based on speed zone
+      - if:
+          condition:
+            lambda: 'return id(speed_value) > 160;'
+          then:
+            - lvgl.widget.update:
+                id: speed_arc
+                indicator:
+                  arc_color: 0xFF0000
+          else:
+            - if:
+                condition:
+                  lambda: 'return id(speed_value) > 120;'
+                then:
+                  - lvgl.widget.update:
+                      id: speed_arc
+                      indicator:
+                        arc_color: 0xFFFF00
+                else:
+                  - lvgl.widget.update:
+                      id: speed_arc
+                      indicator:
+                        arc_color: 0x00FF00
+
+  # Temperature gauge animation (200ms)
+  - interval: 200ms
+    then:
+      - lambda: |-
+          id(temp_value) = -10 + (rand() % 50);
+      - lvgl.arc.update:
+          id: demo_temp_arc
+          value: !lambda 'return id(temp_value);'
+          animated: true
+      - lvgl.label.update:
+          id: demo_temp_value_label
+          text:
+            format: "%d°C"
+            args: [id(temp_value)]
+
+  # Pressure gauge animation (300ms)
+  - interval: 300ms
+    then:
+      - lambda: |-
+          id(pressure_value) = rand() % 11;
+      - lvgl.arc.update:
+          id: pressure_arc
+          value: !lambda 'return id(pressure_value);'
+          animated: true
+      - lvgl.label.update:
+          id: pressure_value_label
+          text:
+            format: "%d bar"
+            args: [id(pressure_value)]
+
+  # ==========================================================================
+  # NEED FOR SPEED Racing Dashboard Animation (30ms for smooth racing feel)
+  # ==========================================================================
+  - interval: 30ms
+    then:
+      - lambda: |-
+          // Realistic racing car acceleration/deceleration
+          static int target_rpm = 7500;
+          static int shift_delay = 0;
+
+          if (id(nfs_accelerating)) {
+            // Accelerating - RPM builds up, then shifts
+            id(nfs_rpm) += 80 + (rand() % 40);
+
+            // Shift up when hitting redline
+            if (id(nfs_rpm) >= 8500) {
+              if (id(nfs_gear) < 6) {
+                id(nfs_gear)++;
+                id(nfs_rpm) = 4500 + (rand() % 500);  // RPM drops after shift
+                shift_delay = 5;
+              } else {
+                // Top gear - maintain high RPM
+                id(nfs_rpm) = 7500 + (rand() % 1000);
+              }
+            }
+
+            // Speed increases based on gear and RPM
+            int speed_increase = (id(nfs_rpm) / 1500) * id(nfs_gear) / 3;
+            id(nfs_speed) += speed_increase;
+            if (id(nfs_speed) > 320) id(nfs_speed) = 320;
+
+            // Random braking events
+            if (id(nfs_speed) > 280 && (rand() % 100) < 3) {
+              id(nfs_accelerating) = false;
+            }
+          } else {
+            // Braking/Decelerating
+            id(nfs_rpm) -= 150;
+            id(nfs_speed) -= 8;
+
+            // Downshift
+            if (id(nfs_rpm) < 2500 && id(nfs_gear) > 1) {
+              id(nfs_gear)--;
+              id(nfs_rpm) = 5500;
+            }
+
+            if (id(nfs_rpm) < 800) id(nfs_rpm) = 800;
+            if (id(nfs_speed) < 0) {
+              id(nfs_speed) = 0;
+              id(nfs_accelerating) = true;
+              id(nfs_gear) = 1;
+            }
+
+            // Resume acceleration
+            if (id(nfs_speed) < 80 && (rand() % 100) < 10) {
+              id(nfs_accelerating) = true;
+            }
+          }
+      # Update NFS Speedometer
+      - lvgl.arc.update:
+          id: nfs_speed_arc
+          value: !lambda 'return id(nfs_speed);'
+      - lvgl.label.update:
+          id: nfs_speed_label
+          text:
+            format: "%d"
+            args: [id(nfs_speed)]
+      # Update NFS Tachometer (RPM)
+      - lvgl.arc.update:
+          id: nfs_rpm_arc
+          value: !lambda 'return id(nfs_rpm);'
+      - lvgl.label.update:
+          id: nfs_rpm_label
+          text:
+            format: "%d"
+            args: [id(nfs_rpm)]
+      # Update Gear indicator
+      - lvgl.label.update:
+          id: nfs_gear_label
+          text:
+            format: "%d"
+            args: [id(nfs_gear)]
+      # RPM arc color - redline effect
+      - if:
+          condition:
+            lambda: 'return id(nfs_rpm) >= 7500;'
+          then:
+            - lvgl.widget.update:
+                id: nfs_rpm_arc
+                indicator:
+                  arc_color: 0xFF0000
+          else:
+            - if:
+                condition:
+                  lambda: 'return id(nfs_rpm) >= 6000;'
+                then:
+                  - lvgl.widget.update:
+                      id: nfs_rpm_arc
+                      indicator:
+                        arc_color: 0xFF6600
+                else:
+                  - lvgl.widget.update:
+                      id: nfs_rpm_arc
+                      indicator:
+                        arc_color: 0x00FFFF
+
+# =============================================================================
+# LVGL CONFIGURATION
+# =============================================================================
 lvgl:
   displays:
     - display_id: my_display
       pages:
-        - id: main_page
+        # =====================================================================
+        # PAGE 1: Speedometer Gauge (ROUND_OUTER)
+        # =====================================================================
+        - id: speedometer_page
+          bg_color: 0x0a0a14
           widgets:
-            # Example 1: Circular Scale (Speedometer)
+            - label:
+                x: 20
+                y: 10
+                text: "Speedometer (Scale + Arc)"
+                text_color: 0xFFFFFF
+                text_font: montserrat_18
+
+            # Scale for tick marks and labels
             - scale:
                 id: speed_scale
-                x: 10
-                y: 10
-                width: 200
-                height: 200
-                mode: ROUND_OUTER  # Circular scale with ticks on outside
+                align: CENTER
+                width: 280
+                height: 280
+                mode: ROUND_OUTER
                 min_value: 0
                 max_value: 200
-                rotation: 135  # Start angle
-                angle_range: 270  # Total angle coverage
-                ticks:
-                  count: 21  # 21 minor ticks
-                  width: 2
-                  length: 10
-                  color: 0x808080
-                  major:
-                    stride: 5  # Every 5th tick is major
-                    width: 4
-                    length: 20
-                    color: 0xFFFFFF
-                    label_show: true
-                    label_gap: 8
-                sections:
-                  # Green zone (0-120)
-                  - id: safe_zone
-                    range_from: 0
-                    range_to: 120
-                    color: 0x00FF00
-                    width: 6
-                  # Yellow zone (120-160)
-                  - id: caution_zone
-                    range_from: 120
-                    range_to: 160
-                    color: 0xFFFF00
-                    width: 6
-                  # Red zone (160-200)
-                  - id: danger_zone
-                    range_from: 160
-                    range_to: 200
-                    color: 0xFF0000
-                    width: 6
-
-            # Example 2: Horizontal Scale (Top)
-            - scale:
-                id: horizontal_scale
-                x: 10
-                y: 220
-                width: 300
-                height: 50
-                mode: HORIZONTAL_TOP  # Horizontal with ticks on top
-                min_value: 0
-                max_value: 100
-                ticks:
-                  count: 11  # 11 ticks (0, 10, 20, ..., 100)
-                  width: 2
-                  length: 8
-                  color: 0x808080
-                  major:
-                    stride: 5  # Every 5th tick is major
-                    width: 3
-                    length: 15
-                    color: 0x000000
-                    label_show: true
-                sections:
-                  - id: low_section
-                    range_from: 0
-                    range_to: 33
-                    color: 0x0000FF
-                    width: 4
-                  - id: mid_section
-                    range_from: 33
-                    range_to: 66
-                    color: 0x00FF00
-                    width: 4
-                  - id: high_section
-                    range_from: 66
-                    range_to: 100
-                    color: 0xFF0000
-                    width: 4
-
-            # Example 3: Vertical Scale (Left side)
-            - scale:
-                id: temp_scale
-                x: 320
-                y: 10
-                width: 50
-                height: 200
-                mode: VERTICAL_LEFT  # Vertical with ticks on left
-                min_value: -20
-                max_value: 50
-                ticks:
-                  count: 15  # 15 ticks
-                  width: 2
-                  length: 8
-                  color: 0x808080
-                  major:
-                    stride: 3  # Every 3rd tick
-                    width: 3
-                    length: 12
-                    color: 0x000000
-                    label_show: true
-                    label_gap: 4
-                sections:
-                  - id: freezing
-                    range_from: -20
-                    range_to: 0
-                    color: 0x0080FF
-                    width: 5
-                  - id: comfortable
-                    range_from: 0
-                    range_to: 25
-                    color: 0x00FF00
-                    width: 5
-                  - id: hot
-                    range_from: 25
-                    range_to: 50
-                    color: 0xFF0000
-                    width: 5
-
-            # Example 4: Round Inner Scale (Gauge style)
-            - scale:
-                id: pressure_gauge
-                x: 220
-                y: 10
-                width: 180
-                height: 180
-                mode: ROUND_INNER  # Circular scale with ticks on inside
-                min_value: 0
-                max_value: 10
                 rotation: 135
                 angle_range: 270
                 ticks:
                   count: 21
                   width: 2
                   length: 10
-                  color: 0x808080
+                  color: 0x404040
                   major:
-                    stride: 5
+                    stride: 2
                     width: 4
                     length: 20
                     color: 0xFFFFFF
                     label_show: true
+                    label_gap: 12
+                sections:
+                  # Green zone (0-120 km/h)
+                  - id: speed_safe
+                    range_from: 0
+                    range_to: 120
+                    color: 0x00FF00
+                    width: 6
+                  # Yellow zone (120-160 km/h)
+                  - id: speed_caution
+                    range_from: 120
+                    range_to: 160
+                    color: 0xFFFF00
+                    width: 6
+                  # Red zone (160-200 km/h)
+                  - id: speed_danger
+                    range_from: 160
+                    range_to: 200
+                    color: 0xFF0000
+                    width: 6
 
-# Automation examples
-# Update scale sections dynamically
-on_...:
-  then:
-    # Update a scale section's range and color
-    - lvgl.scale.section.update:
-        id: safe_zone
-        range_from: 0
-        range_to: 100
-        color: 0x00AA00
-        width: 8
+            # Arc for animated indicator
+            - arc:
+                id: speed_arc
+                align: CENTER
+                width: 220
+                height: 220
+                min_value: 0
+                max_value: 200
+                value: 0
+                rotation: 135
+                start_angle: 0
+                end_angle: 270
+                mode: NORMAL
+                adjustable: false
+                indicator:
+                  arc_color: 0x00FF00
+                  arc_width: 20
+                main:
+                  arc_color: 0x1a1a2e
+                  arc_width: 20
 
-    # Update scale mode and range
-    - lvgl.scale.update:
-        id: speed_scale
-        mode: ROUND_OUTER
-        min_value: 0
-        max_value: 300
-        rotation: 90
-        angle_range: 180
+            # Speed value display
+            - label:
+                id: speed_value_label
+                align: CENTER
+                y: 20
+                text: "0"
+                text_color: 0x00FF00
+                text_font: montserrat_36
 
-# Integration with sensors
-sensor:
-  - platform: template
-    name: "Vehicle Speed"
-    id: vehicle_speed
-    update_interval: 500ms
-    lambda: |-
-      // Your speed calculation here
-      return 75.5;
-    on_value:
-      then:
-        # Note: Scale widget doesn't have direct value updates
-        # You would typically use this with indicators/needles
-        # that are positioned based on the sensor value
-        - lambda: |-
-            // Custom code to update needle/indicator position
-            // based on vehicle_speed->state
+            - label:
+                align: CENTER
+                y: 55
+                text: "km/h"
+                text_color: 0x808080
+                text_font: montserrat_14
 
-  - platform: template
-    name: "Temperature"
-    id: temperature_sensor
-    update_interval: 1s
-    lambda: |-
-      return 22.5;
-    on_value:
-      then:
-        # Update sections based on temperature thresholds
-        - if:
-            condition:
-              lambda: 'return x > 30;'
-            then:
-              - lvgl.scale.section.update:
-                  id: hot
-                  color: 0xFF0000  # Bright red when too hot
+        # =====================================================================
+        # PAGE 2: Temperature & Humidity Gauges (Dual ROUND_INNER)
+        # =====================================================================
+        - id: climate_page
+          bg_color: 0x0a0a14
+          widgets:
+            - label:
+                x: 20
+                y: 10
+                text: "Climate Monitor"
+                text_color: 0xFFFFFF
+                text_font: montserrat_18
+
+            # Temperature Scale (Left)
+            - scale:
+                id: temp_scale
+                x: 30
+                y: 60
+                width: 200
+                height: 200
+                mode: ROUND_INNER
+                min_value: -20
+                max_value: 50
+                rotation: 135
+                angle_range: 270
+                ticks:
+                  count: 15
+                  width: 2
+                  length: 8
+                  color: 0x404040
+                  major:
+                    stride: 3
+                    width: 3
+                    length: 15
+                    color: 0xFFFFFF
+                    label_show: true
+                    label_gap: 8
+                sections:
+                  - id: temp_cold
+                    range_from: -20
+                    range_to: 10
+                    color: 0x00BFFF
+                    width: 5
+                  - id: temp_comfort
+                    range_from: 10
+                    range_to: 28
+                    color: 0x00FF00
+                    width: 5
+                  - id: temp_hot
+                    range_from: 28
+                    range_to: 50
+                    color: 0xFF4500
+                    width: 5
+
+            - arc:
+                id: demo_temp_arc
+                x: 55
+                y: 85
+                width: 150
+                height: 150
+                min_value: -20
+                max_value: 50
+                value: 20
+                rotation: 135
+                start_angle: 0
+                end_angle: 270
+                mode: NORMAL
+                adjustable: false
+                indicator:
+                  arc_color: 0x00FF00
+                  arc_width: 12
+                main:
+                  arc_color: 0x1a1a2e
+                  arc_width: 12
+
+            - label:
+                id: demo_temp_value_label
+                x: 80
+                y: 155
+                width: 100
+                text_align: CENTER
+                text: "20°C"
+                text_color: 0x00FF00
+                text_font: montserrat_20
+
+            # Humidity Scale (Right)
+            - scale:
+                id: humidity_scale
+                x: 250
+                y: 60
+                width: 200
+                height: 200
+                mode: ROUND_INNER
+                min_value: 0
+                max_value: 100
+                rotation: 135
+                angle_range: 270
+                ticks:
+                  count: 11
+                  width: 2
+                  length: 8
+                  color: 0x404040
+                  major:
+                    stride: 2
+                    width: 3
+                    length: 15
+                    color: 0xFFFFFF
+                    label_show: true
+                    label_gap: 8
+                sections:
+                  - id: humid_dry
+                    range_from: 0
+                    range_to: 30
+                    color: 0xFFAA00
+                    width: 5
+                  - id: humid_comfort
+                    range_from: 30
+                    range_to: 60
+                    color: 0x00FF00
+                    width: 5
+                  - id: humid_wet
+                    range_from: 60
+                    range_to: 100
+                    color: 0x00BFFF
+                    width: 5
+
+            - arc:
+                id: humidity_arc
+                x: 275
+                y: 85
+                width: 150
+                height: 150
+                min_value: 0
+                max_value: 100
+                value: 50
+                rotation: 135
+                start_angle: 0
+                end_angle: 270
+                mode: NORMAL
+                adjustable: false
+                indicator:
+                  arc_color: 0x00FF00
+                  arc_width: 12
+                main:
+                  arc_color: 0x1a1a2e
+                  arc_width: 12
+
+            - label:
+                id: humidity_value_label
+                x: 300
+                y: 155
+                width: 100
+                text_align: CENTER
+                text: "50%"
+                text_color: 0x00FF00
+                text_font: montserrat_20
+
+        # =====================================================================
+        # PAGE 3: Horizontal Scales (Progress Bars)
+        # =====================================================================
+        - id: horizontal_page
+          bg_color: 0x0a0a14
+          widgets:
+            - label:
+                x: 20
+                y: 10
+                text: "Horizontal Scales"
+                text_color: 0xFFFFFF
+                text_font: montserrat_18
+
+            # Horizontal Top Scale
+            - label:
+                x: 20
+                y: 50
+                text: "HORIZONTAL_TOP:"
+                text_color: 0x808080
+
+            - scale:
+                id: h_top_scale
+                x: 20
+                y: 80
+                width: 400
+                height: 60
+                mode: HORIZONTAL_TOP
+                min_value: 0
+                max_value: 100
+                ticks:
+                  count: 11
+                  width: 2
+                  length: 10
+                  color: 0x404040
+                  major:
+                    stride: 2
+                    width: 3
+                    length: 18
+                    color: 0xFFFFFF
+                    label_show: true
+                sections:
+                  - id: h_low
+                    range_from: 0
+                    range_to: 33
+                    color: 0x0088FF
+                    width: 4
+                  - id: h_mid
+                    range_from: 33
+                    range_to: 66
+                    color: 0x00FF88
+                    width: 4
+                  - id: h_high
+                    range_from: 66
+                    range_to: 100
+                    color: 0xFF8800
+                    width: 4
+
+            # Horizontal Bottom Scale
+            - label:
+                x: 20
+                y: 160
+                text: "HORIZONTAL_BOTTOM:"
+                text_color: 0x808080
+
+            - scale:
+                id: h_bottom_scale
+                x: 20
+                y: 190
+                width: 400
+                height: 60
+                mode: HORIZONTAL_BOTTOM
+                min_value: -50
+                max_value: 50
+                ticks:
+                  count: 11
+                  width: 2
+                  length: 10
+                  color: 0x404040
+                  major:
+                    stride: 2
+                    width: 3
+                    length: 18
+                    color: 0xFFFFFF
+                    label_show: true
+                sections:
+                  - id: h_neg
+                    range_from: -50
+                    range_to: 0
+                    color: 0x00BFFF
+                    width: 4
+                  - id: h_pos
+                    range_from: 0
+                    range_to: 50
+                    color: 0xFF4500
+                    width: 4
+
+        # =====================================================================
+        # PAGE 4: Vertical Scales (Thermometer Style)
+        # =====================================================================
+        - id: vertical_page
+          bg_color: 0x0a0a14
+          widgets:
+            - label:
+                x: 20
+                y: 10
+                text: "Vertical Scales"
+                text_color: 0xFFFFFF
+                text_font: montserrat_18
+
+            # Vertical Left Scale
+            - label:
+                x: 20
+                y: 45
+                text: "LEFT"
+                text_color: 0x808080
+
+            - scale:
+                id: v_left_scale
+                x: 60
+                y: 70
+                width: 80
+                height: 200
+                mode: VERTICAL_LEFT
+                min_value: 0
+                max_value: 100
+                ticks:
+                  count: 11
+                  width: 2
+                  length: 10
+                  color: 0x404040
+                  major:
+                    stride: 2
+                    width: 3
+                    length: 18
+                    color: 0xFFFFFF
+                    label_show: true
+                    label_gap: 6
+                sections:
+                  - id: v_low
+                    range_from: 0
+                    range_to: 30
+                    color: 0x00BFFF
+                    width: 4
+                  - id: v_normal
+                    range_from: 30
+                    range_to: 70
+                    color: 0x00FF00
+                    width: 4
+                  - id: v_high
+                    range_from: 70
+                    range_to: 100
+                    color: 0xFF0000
+                    width: 4
+
+            # Vertical Right Scale
+            - label:
+                x: 200
+                y: 45
+                text: "RIGHT"
+                text_color: 0x808080
+
+            - scale:
+                id: v_right_scale
+                x: 180
+                y: 70
+                width: 80
+                height: 200
+                mode: VERTICAL_RIGHT
+                min_value: -20
+                max_value: 50
+                ticks:
+                  count: 15
+                  width: 2
+                  length: 10
+                  color: 0x404040
+                  major:
+                    stride: 3
+                    width: 3
+                    length: 18
+                    color: 0xFFFFFF
+                    label_show: true
+                    label_gap: 6
+                sections:
+                  - id: v_freeze
+                    range_from: -20
+                    range_to: 0
+                    color: 0x00BFFF
+                    width: 4
+                  - id: v_comfort
+                    range_from: 0
+                    range_to: 25
+                    color: 0x00FF00
+                    width: 4
+                  - id: v_hot
+                    range_from: 25
+                    range_to: 50
+                    color: 0xFF4500
+                    width: 4
+
+            # Pressure Gauge (smaller, right side)
+            - label:
+                x: 320
+                y: 45
+                text: "Pressure"
+                text_color: 0x808080
+
+            - scale:
+                id: pressure_scale
+                x: 310
+                y: 70
+                width: 150
+                height: 150
+                mode: ROUND_OUTER
+                min_value: 0
+                max_value: 10
+                rotation: 135
+                angle_range: 270
+                ticks:
+                  count: 11
+                  width: 2
+                  length: 6
+                  color: 0x404040
+                  major:
+                    stride: 2
+                    width: 3
+                    length: 12
+                    color: 0xFFFFFF
+                    label_show: true
+                sections:
+                  - id: p_low
+                    range_from: 0
+                    range_to: 3
+                    color: 0x00FF00
+                    width: 4
+                  - id: p_mid
+                    range_from: 3
+                    range_to: 7
+                    color: 0xFFFF00
+                    width: 4
+                  - id: p_high
+                    range_from: 7
+                    range_to: 10
+                    color: 0xFF0000
+                    width: 4
+
+            - arc:
+                id: pressure_arc
+                x: 330
+                y: 90
+                width: 110
+                height: 110
+                min_value: 0
+                max_value: 10
+                value: 5
+                rotation: 135
+                start_angle: 0
+                end_angle: 270
+                mode: NORMAL
+                adjustable: false
+                indicator:
+                  arc_color: 0xFFFF00
+                  arc_width: 10
+                main:
+                  arc_color: 0x1a1a2e
+                  arc_width: 10
+
+            - label:
+                id: pressure_value_label
+                x: 355
+                y: 140
+                width: 60
+                text_align: CENTER
+                text: "5 bar"
+                text_color: 0xFFFF00
+                text_font: montserrat_14
+
+        # =====================================================================
+        # PAGE 5: Home Assistant Integration (Real Sensors)
+        # =====================================================================
+        - id: ha_sensors_page
+          bg_color: 0x0a0a14
+          widgets:
+            - label:
+                x: 20
+                y: 10
+                text: "Home Assistant Sensors"
+                text_color: 0xFFFFFF
+                text_font: montserrat_18
+
+            # Temperature from HA
+            - scale:
+                id: ha_temp_scale
+                x: 30
+                y: 60
+                width: 200
+                height: 200
+                mode: ROUND_OUTER
+                min_value: -10
+                max_value: 40
+                rotation: 135
+                angle_range: 270
+                ticks:
+                  count: 11
+                  width: 2
+                  length: 8
+                  color: 0x404040
+                  major:
+                    stride: 2
+                    width: 3
+                    length: 15
+                    color: 0xFFFFFF
+                    label_show: true
+                sections:
+                  - id: ha_cold
+                    range_from: -10
+                    range_to: 15
+                    color: 0x00BFFF
+                    width: 4
+                  - id: ha_comfort
+                    range_from: 15
+                    range_to: 26
+                    color: 0x00FF00
+                    width: 4
+                  - id: ha_warm
+                    range_from: 26
+                    range_to: 40
+                    color: 0xFF4500
+                    width: 4
+
+            - arc:
+                id: temp_arc
+                x: 55
+                y: 85
+                width: 150
+                height: 150
+                min_value: -10
+                max_value: 40
+                value: 20
+                rotation: 135
+                start_angle: 0
+                end_angle: 270
+                mode: NORMAL
+                adjustable: false
+                indicator:
+                  arc_color: 0x00FF00
+                  arc_width: 12
+                main:
+                  arc_color: 0x1a1a2e
+                  arc_width: 12
+
+            - label:
+                id: temp_value_label
+                x: 80
+                y: 155
+                width: 100
+                text_align: CENTER
+                text: "--.-°C"
+                text_color: 0x00FF00
+                text_font: montserrat_18
+
+            - label:
+                x: 80
+                y: 180
+                width: 100
+                text_align: CENTER
+                text: "Temperature"
+                text_color: 0x808080
+
+            # Humidity from HA
+            - scale:
+                id: ha_humid_scale
+                x: 250
+                y: 60
+                width: 200
+                height: 200
+                mode: ROUND_OUTER
+                min_value: 0
+                max_value: 100
+                rotation: 135
+                angle_range: 270
+                ticks:
+                  count: 11
+                  width: 2
+                  length: 8
+                  color: 0x404040
+                  major:
+                    stride: 2
+                    width: 3
+                    length: 15
+                    color: 0xFFFFFF
+                    label_show: true
+                sections:
+                  - id: ha_dry
+                    range_from: 0
+                    range_to: 30
+                    color: 0xFFAA00
+                    width: 4
+                  - id: ha_ideal
+                    range_from: 30
+                    range_to: 60
+                    color: 0x00FF00
+                    width: 4
+                  - id: ha_humid
+                    range_from: 60
+                    range_to: 100
+                    color: 0x00BFFF
+                    width: 4
+
+            - arc:
+                id: ha_humid_arc
+                x: 275
+                y: 85
+                width: 150
+                height: 150
+                min_value: 0
+                max_value: 100
+                value: 50
+                rotation: 135
+                start_angle: 0
+                end_angle: 270
+                mode: NORMAL
+                adjustable: false
+                indicator:
+                  arc_color: 0x00FF00
+                  arc_width: 12
+                main:
+                  arc_color: 0x1a1a2e
+                  arc_width: 12
+
+            - label:
+                id: humid_value_label
+                x: 300
+                y: 155
+                width: 100
+                text_align: CENTER
+                text: "--%"
+                text_color: 0x00FF00
+                text_font: montserrat_18
+
+            - label:
+                x: 300
+                y: 180
+                width: 100
+                text_align: CENTER
+                text: "Humidity"
+                text_color: 0x808080
+
+        # =====================================================================
+        # PAGE 6: NEED FOR SPEED Racing Dashboard
+        # =====================================================================
+        - id: nfs_racing_page
+          bg_color: 0x000000
+          widgets:
+            # ===== SPEEDOMETER (Left Side) =====
+            # Animated spinner around speedometer
+            - spinner:
+                id: nfs_speed_spinner
+                x: 20
+                y: 30
+                width: 280
+                height: 280
+                arc_length: 90
+                spin_time: 2s
+                main:
+                  arc_width: 6
+                  arc_color: 0x001a1a
+                indicator:
+                  arc_width: 6
+                  arc_color: 0x00FFFF
+                  arc_opa: 70%
+
+            # Speed Scale - Racing style
+            - scale:
+                id: nfs_speed_scale
+                x: 30
+                y: 40
+                width: 260
+                height: 260
+                mode: ROUND_OUTER
+                min_value: 0
+                max_value: 320
+                rotation: 135
+                angle_range: 270
+                ticks:
+                  count: 33
+                  width: 2
+                  length: 8
+                  color: 0x333333
+                  major:
+                    stride: 4
+                    width: 3
+                    length: 18
+                    color: 0x00FFFF
+                    label_show: true
+                    label_gap: 15
+                sections:
+                  - id: nfs_speed_normal
+                    range_from: 0
+                    range_to: 180
+                    color: 0x00FFFF
+                    width: 3
+                  - id: nfs_speed_fast
+                    range_from: 180
+                    range_to: 260
+                    color: 0xFF6600
+                    width: 3
+                  - id: nfs_speed_extreme
+                    range_from: 260
+                    range_to: 320
+                    color: 0xFF0000
+                    width: 3
+
+            # Speed Arc indicator
+            - arc:
+                id: nfs_speed_arc
+                x: 55
+                y: 65
+                width: 210
+                height: 210
+                min_value: 0
+                max_value: 320
+                value: 0
+                rotation: 135
+                start_angle: 0
+                end_angle: 270
+                mode: NORMAL
+                adjustable: false
+                indicator:
+                  arc_color: 0x00FFFF
+                  arc_width: 25
+                  arc_opa: 90%
+                main:
+                  arc_color: 0x0a0a0a
+                  arc_width: 25
+
+            # Digital Speed Display
+            - label:
+                id: nfs_speed_label
+                x: 95
+                y: 150
+                width: 130
+                text_align: CENTER
+                text: "0"
+                text_color: 0x00FFFF
+                text_font: montserrat_48
+
+            - label:
+                x: 95
+                y: 205
+                width: 130
+                text_align: CENTER
+                text: "KM/H"
+                text_color: 0x00FFFF
+                text_font: montserrat_14
+
+            # ===== TACHOMETER (Right Side) =====
+            # Animated spinner around tachometer
+            - spinner:
+                id: nfs_rpm_spinner
+                x: 320
+                y: 30
+                width: 280
+                height: 280
+                arc_length: 90
+                spin_time: 1.5s
+                main:
+                  arc_width: 6
+                  arc_color: 0x001a1a
+                indicator:
+                  arc_width: 6
+                  arc_color: 0x00FFFF
+                  arc_opa: 70%
+
+            # RPM Scale
+            - scale:
+                id: nfs_rpm_scale
+                x: 330
+                y: 40
+                width: 260
+                height: 260
+                mode: ROUND_OUTER
+                min_value: 0
+                max_value: 9
+                rotation: 135
+                angle_range: 270
+                ticks:
+                  count: 46
+                  width: 2
+                  length: 6
+                  color: 0x333333
+                  major:
+                    stride: 5
+                    width: 3
+                    length: 15
+                    color: 0x00FFFF
+                    label_show: true
+                    label_gap: 12
+                sections:
+                  - id: nfs_rpm_normal
+                    range_from: 0
+                    range_to: 6
+                    color: 0x00FFFF
+                    width: 3
+                  - id: nfs_rpm_high
+                    range_from: 6
+                    range_to: 8
+                    color: 0xFF6600
+                    width: 3
+                  - id: nfs_rpm_redline
+                    range_from: 8
+                    range_to: 9
+                    color: 0xFF0000
+                    width: 4
+
+            # RPM Arc indicator
+            - arc:
+                id: nfs_rpm_arc
+                x: 355
+                y: 65
+                width: 210
+                height: 210
+                min_value: 0
+                max_value: 9000
+                value: 800
+                rotation: 135
+                start_angle: 0
+                end_angle: 270
+                mode: NORMAL
+                adjustable: false
+                indicator:
+                  arc_color: 0x00FFFF
+                  arc_width: 25
+                  arc_opa: 90%
+                main:
+                  arc_color: 0x0a0a0a
+                  arc_width: 25
+
+            # Digital RPM Display
+            - label:
+                id: nfs_rpm_label
+                x: 400
+                y: 150
+                width: 120
+                text_align: CENTER
+                text: "800"
+                text_color: 0x00FFFF
+                text_font: montserrat_36
+
+            - label:
+                x: 400
+                y: 195
+                width: 120
+                text_align: CENTER
+                text: "RPM x1000"
+                text_color: 0x00FFFF
+                text_font: montserrat_12
+
+            # ===== GEAR INDICATOR (Center) =====
+            - obj:
+                x: 270
+                y: 320
+                width: 80
+                height: 80
+                bg_color: 0x000000
+                border_width: 3
+                border_color: 0x00FFFF
+                radius: 10
+                widgets:
+                  - label:
+                      id: nfs_gear_label
+                      align: CENTER
+                      text: "1"
+                      text_color: 0x00FF00
+                      text_font: montserrat_48
+
+            - label:
+                x: 270
+                y: 405
+                width: 80
+                text_align: CENTER
+                text: "GEAR"
+                text_color: 0x808080
+                text_font: montserrat_12
+
+            # ===== RACING TITLE =====
+            - label:
+                x: 200
+                y: 420
+                width: 220
+                text_align: CENTER
+                text: "NEED FOR SPEED"
+                text_color: 0xFF6600
+                text_font: montserrat_20
+
+            - label:
+                x: 200
+                y: 445
+                width: 220
+                text_align: CENTER
+                text: "RACING DASHBOARD"
+                text_color: 0x00FFFF
+                text_font: montserrat_14
+
+            # ===== STATUS INDICATORS =====
+            # Nitro indicator
+            - obj:
+                x: 20
+                y: 330
+                width: 100
+                height: 30
+                bg_color: 0x001a1a
+                border_width: 1
+                border_color: 0x00FFFF
+                radius: 5
+                widgets:
+                  - label:
+                      align: CENTER
+                      text: "N2O READY"
+                      text_color: 0x00FF00
+                      text_font: montserrat_12
+
+            # Turbo indicator
+            - obj:
+                x: 500
+                y: 330
+                width: 100
+                height: 30
+                bg_color: 0x001a1a
+                border_width: 1
+                border_color: 0x00FFFF
+                radius: 5
+                widgets:
+                  - label:
+                      align: CENTER
+                      text: "TURBO"
+                      text_color: 0xFF6600
+                      text_font: montserrat_12
+
+# =============================================================================
+# TROUBLESHOOTING
+# =============================================================================
+#
+# Scale not animating:
+#   - Scale widget only displays ticks/labels (static)
+#   - Use Arc widget overlaid on Scale for animated indicator
+#   - Update the Arc value to animate the gauge
+#
+# Sections not showing:
+#   - Check range_from and range_to are within min_value/max_value
+#   - Make sure width > 0 for sections
+#   - Verify color is valid hex (0xRRGGBB)
+#
+# Labels not showing:
+#   - Set label_show: true in major ticks
+#   - Increase label_gap if labels overlap with ticks
+#   - Check that mode is set correctly
+#
+# Arc not aligned with Scale:
+#   - Arc and Scale should have same rotation and angle_range
+#   - Arc size should be smaller than Scale (to fit inside)
+#   - Use same min_value/max_value for both
+#

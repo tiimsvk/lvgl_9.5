@@ -61,6 +61,7 @@ from ..lv_validation import (
     size,
 )
 from ..lvcode import lv, lv_add, lv_obj
+from esphome.cpp_generator import RawStatement
 from ..types import LvNumber, ObjUpdateAction
 from . import NumberType, Widget, get_widgets
 
@@ -256,7 +257,7 @@ class ScaleType(NumberType):
 
         # Add colored sections
         if sections := config.get(CONF_SECTIONS):
-            for section_conf in sections:
+            for idx, section_conf in enumerate(sections):
                 section_id = section_conf[CONF_ID]
 
                 # Determine start and end values
@@ -275,14 +276,18 @@ class ScaleType(NumberType):
                 # Set section range
                 lv.scale_section_set_range(section_var, start_value, end_value)
 
-                # Set section style
-                if CONF_COLOR in section_conf:
-                    color = await lv_color.process(section_conf[CONF_COLOR])
-                    lv_obj.set_style_line_color(section_var, color, LV_PART.INDICATOR)
+                # Create and apply style for section (sections need lv_style_t, not lv_obj_set_style_*)
+                # Use section_id to create unique style name
+                style_name = f"style_{section_id}"
+                color = await lv_color.process(section_conf.get(CONF_COLOR, 0))
+                width = section_conf.get(CONF_WIDTH, 4)
 
-                if CONF_WIDTH in section_conf:
-                    width = section_conf[CONF_WIDTH]
-                    lv_obj.set_style_line_width(section_var, width, LV_PART.INDICATOR)
+                # Declare static style, init it, set properties, and apply to section
+                lv_add(RawStatement(f"static lv_style_t {style_name};"))
+                lv_add(RawStatement(f"lv_style_init(&{style_name});"))
+                lv_add(RawStatement(f"lv_style_set_line_color(&{style_name}, {color});"))
+                lv_add(RawStatement(f"lv_style_set_line_width(&{style_name}, {width});"))
+                lv_add(RawStatement(f"lv_scale_section_set_style({section_var}, LV_PART_INDICATOR, &{style_name});"))
 
         # Set initial value if provided
         value = await get_start_value(config)
@@ -349,6 +354,9 @@ async def section_update_to_code(config, action_id, template_arg, args):
     """Handle scale section update actions."""
     widgets = await get_widgets(config)
 
+    # Track style counter for unique names
+    style_counter = [0]
+
     async def update_section(w: Widget):
         # Update section range
         start_value = await get_start_value(config)
@@ -360,13 +368,22 @@ async def section_update_to_code(config, action_id, template_arg, args):
             # If only start value, use it as both start and end
             lv.scale_section_set_range(w.obj, start_value, start_value)
 
-        # Update section style
-        if CONF_COLOR in config:
-            color = await lv_color.process(config[CONF_COLOR])
-            lv_obj.set_style_line_color(w.obj, color, LV_PART.INDICATOR)
+        # Update section style using lv_style_t (sections are not lv_obj_t)
+        if CONF_COLOR in config or CONF_WIDTH in config:
+            style_name = f"scale_section_update_style_{style_counter[0]}"
+            style_counter[0] += 1
 
-        if CONF_WIDTH in config:
-            width = config[CONF_WIDTH]
-            lv_obj.set_style_line_width(w.obj, width, LV_PART.INDICATOR)
+            lv_add(RawStatement(f"static lv_style_t {style_name};"))
+            lv_add(RawStatement(f"lv_style_init(&{style_name});"))
+
+            if CONF_COLOR in config:
+                color = await lv_color.process(config[CONF_COLOR])
+                lv_add(RawStatement(f"lv_style_set_line_color(&{style_name}, {color});"))
+
+            if CONF_WIDTH in config:
+                width = config[CONF_WIDTH]
+                lv_add(RawStatement(f"lv_style_set_line_width(&{style_name}, {width});"))
+
+            lv_add(RawStatement(f"lv_scale_section_set_style({w.obj}, LV_PART_INDICATOR, &{style_name});"))
 
     return await action_to_code(widgets, update_section, action_id, template_arg, args, config)
