@@ -115,7 +115,7 @@ def validate_lottie_source(config):
     return config
 
 
-LOTTIE_BASE_SCHEMA = cv.Schema(
+LOTTIE_SCHEMA = cv.Schema(
     {
         cv.Optional(CONF_WIDTH): size,
         cv.Optional(CONF_HEIGHT): size,
@@ -125,9 +125,7 @@ LOTTIE_BASE_SCHEMA = cv.Schema(
         cv.Optional(CONF_AUTO_START, default=True): cv.boolean,
         cv.GenerateID(CONF_RAW_DATA_ID): cv.declare_id(cg.uint8),
     }
-)
-
-LOTTIE_SCHEMA = cv.All(LOTTIE_BASE_SCHEMA, validate_lottie_source)
+).add_extra(validate_lottie_source)
 
 LOTTIE_MODIFY_SCHEMA = cv.Schema(
     {
