@@ -321,21 +321,15 @@ lvgl:
                       type: LINE
                       point_count: 64
                       update_mode: SHIFT
-                      y_axis:
-                        id: axis_left_y
-                        major_len: 0
-                        minor_len: 0
-                        min: -32768
-                        max: 32767
-                      x_axis:
-                        id: axis_left_x
-                        major_len: 0
-                        minor_len: 0
+                      div_line_count_hor: 0
+                      div_line_count_ver: 0
+                      axis_primary_y:
+                        min_value: -32768
+                        max_value: 32767
                       series:
                         - id: series_mic_left
                           color: 0xFF0000
                           axis: PRIMARY_Y
-                          hidden: false
                       items:
                         bg_opa: TRANSP
                       indicator:
@@ -354,21 +348,15 @@ lvgl:
                       type: LINE
                       point_count: 64
                       update_mode: SHIFT
-                      y_axis:
-                        id: axis_right_y
-                        major_len: 0
-                        minor_len: 0
-                        min: -32768
-                        max: 32767
-                      x_axis:
-                        id: axis_right_x
-                        major_len: 0
-                        minor_len: 0
+                      div_line_count_hor: 0
+                      div_line_count_ver: 0
+                      axis_primary_y:
+                        min_value: -32768
+                        max_value: 32767
                       series:
                         - id: series_mic_right
                           color: 0xFF0000
                           axis: PRIMARY_Y
-                          hidden: false
                       items:
                         bg_opa: TRANSP
                       indicator:
