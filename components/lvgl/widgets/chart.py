@@ -229,13 +229,13 @@ class ChartType(WidgetType):
         y_points = series_config.get(CONF_Y_POINTS)
 
         if x_points and y_points:
-            # Scatter chart with X/Y coordinates - use direct array access
-            # since lv_chart_set_value_by_id2 may not exist in all LVGL versions
+            # Scatter chart with X/Y coordinates - use lv_chart_get_x_array/y_array
+            # to access arrays via public API (lv_chart_series_t is incomplete type)
             for i, (x_val, y_val) in enumerate(zip(x_points, y_points)):
                 x = await lv_int.process(x_val)
                 y = await lv_int.process(y_val)
-                lv_add(RawStatement(f"{series_var}->x_points[{i}] = {x}"))
-                lv_add(RawStatement(f"{series_var}->y_points[{i}] = {y}"))
+                lv_add(RawStatement(f"lv_chart_get_x_array({w.obj}, {series_var})[{i}] = {x}"))
+                lv_add(RawStatement(f"lv_chart_get_y_array({w.obj}, {series_var})[{i}] = {y}"))
             lv.chart_refresh(w.obj)
         elif points := series_config.get(CONF_POINTS):
             # LINE/BAR chart with Y values only
@@ -394,9 +394,10 @@ async def chart_set_value_by_id2(config, action_id, template_arg, args):
         else:
             y_val = y_value
 
-        # Use direct array access since lv_chart_set_value_by_id2 may not exist
-        lv_add(RawStatement(f"{series}->x_points[{idx_val}] = {x_val}"))
-        lv_add(RawStatement(f"{series}->y_points[{idx_val}] = {y_val}"))
+        # Use lv_chart_get_x_array/y_array to access arrays via public API
+        # (lv_chart_series_t is an incomplete/forward-declared type)
+        lv_add(RawStatement(f"lv_chart_get_x_array({w.obj}, {series})[{idx_val}] = {x_val}"))
+        lv_add(RawStatement(f"lv_chart_get_y_array({w.obj}, {series})[{idx_val}] = {y_val}"))
         lv.chart_refresh(w.obj)
 
     return await action_to_code(widgets, do_set_value2, action_id, template_arg, args)
