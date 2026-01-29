@@ -9,6 +9,8 @@ The chart widget displays data visualization with support for:
 - Configurable axes and division lines
 """
 
+from esphome import automation
+import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_ID,
@@ -16,18 +18,22 @@ from esphome.const import (
     CONF_MIN_VALUE,
     CONF_MODE,
     CONF_TYPE,
+    CONF_VALUE,
 )
+from esphome.core import Lambda
 
+from ..automation import action_to_code
 from ..defines import (
     CONF_ITEMS,
     CONF_MAIN,
+    call_lambda,
     literal,
 )
 from ..helpers import lvgl_components_required
 from ..lv_validation import lv_color, lv_int
-from ..lvcode import lv
-from ..types import LvType
-from . import Widget, WidgetType
+from ..lvcode import lv, lv_assign, lv_expr, lv_Pvariable
+from ..types import LvType, ObjUpdateAction
+from . import Widget, WidgetType, get_widgets
 
 CONF_CHART = "chart"
 CONF_SERIES = "series"
@@ -173,22 +179,19 @@ class ChartType(WidgetType):
         else:
             color = literal("lv_palette_main(LV_PALETTE_RED)")
 
-        # Add series
-        series_var = series_config[CONF_ID]
-        lv.chart_add_series(w.obj, color, literal("LV_CHART_AXIS_PRIMARY_Y"))
-
-        # Set series type if specified (overrides chart type for this series)
-        if CONF_TYPE in series_config:
-            series_type = CHART_TYPES[series_config[CONF_TYPE]]
-            # Note: In LVGL v9.4, series type is set per series, not globally
-            # This allows mixing different chart types
+        # Declare series variable and add series to chart
+        series_id = series_config[CONF_ID]
+        series_var = lv_Pvariable(LvType("lv_chart_series_t"), series_id)
+        lv_assign(
+            series_var,
+            lv_expr.chart_add_series(w.obj, color, literal("LV_CHART_AXIS_PRIMARY_Y")),
+        )
 
         # Set initial points if provided
         if points := series_config.get(CONF_POINTS):
-            for idx, point_value in enumerate(points):
+            for point_value in points:
                 point = await lv_int.process(point_value)
-                # Set point by index
-                # lv.chart_set_value_by_id(w.obj, series_var, idx, point)
+                lv.chart_set_next_value(w.obj, series_var, point)
 
     def get_uses(self):
         """Chart widget uses label for axis labels"""
@@ -196,3 +199,59 @@ class ChartType(WidgetType):
 
 
 chart_spec = ChartType()
+
+# Type for chart series (used in actions)
+lv_chart_series_t = LvType("lv_chart_series_t")
+
+CONF_SERIES_ID = "series_id"
+
+# Schema for set_next_value action
+CHART_SET_NEXT_VALUE_SCHEMA = cv.Schema(
+    {
+        cv.Required(CONF_ID): cv.use_id(lv_chart_t),
+        cv.Required(CONF_SERIES_ID): cv.use_id(lv_chart_series_t),
+        cv.Required(CONF_VALUE): cv.templatable(cv.int_),
+    }
+)
+
+
+@automation.register_action(
+    "lvgl.chart.set_next_value",
+    ObjUpdateAction,
+    CHART_SET_NEXT_VALUE_SCHEMA,
+)
+async def chart_set_next_value(config, action_id, template_arg, args):
+    """Add a data point to a chart series using SHIFT or CIRCULAR mode"""
+    widgets = await get_widgets(config)
+    series = await cg.get_variable(config[CONF_SERIES_ID])
+    value = config[CONF_VALUE]
+
+    async def do_set_next_value(w: Widget):
+        if isinstance(value, Lambda):
+            val = await cg.process_lambda(value, [], return_type=cg.int32)
+            lv.chart_set_next_value(w.obj, series, call_lambda(val))
+        else:
+            lv.chart_set_next_value(w.obj, series, value)
+        lv.chart_refresh(w.obj)
+
+    return await action_to_code(widgets, do_set_next_value, action_id, template_arg, args)
+
+
+@automation.register_action(
+    "lvgl.chart.refresh",
+    ObjUpdateAction,
+    cv.maybe_simple_value(
+        {
+            cv.Required(CONF_ID): cv.use_id(lv_chart_t),
+        },
+        key=CONF_ID,
+    ),
+)
+async def chart_refresh(config, action_id, template_arg, args):
+    """Refresh the chart to update display after data changes"""
+    widgets = await get_widgets(config)
+
+    async def do_refresh(w: Widget):
+        lv.chart_refresh(w.obj)
+
+    return await action_to_code(widgets, do_refresh, action_id, template_arg, args)
