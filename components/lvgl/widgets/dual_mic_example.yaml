@@ -9,6 +9,13 @@ globals:
   - id: va_is_listening
     type: bool
     initial_value: "false"
+  # Audio samples for chart display
+  - id: audio_sample_left
+    type: int
+    initial_value: "0"
+  - id: audio_sample_right
+    type: int
+    initial_value: "0"
 
 # =============================================================================
 # I2S AUDIO CONFIGURATION (ES7210 + ES8311)
@@ -41,27 +48,31 @@ microphone:
     adc_type: external
     on_data:
       - lambda: |-
-          // Audio data comes as int16_t samples
-          // For stereo: even indices = left, odd indices = right
-          const int16_t *samples = (const int16_t *)data.data();
-          int num_samples = data.size() / 2;  // 2 bytes per sample
+          // Audio data comes as int16_t samples in x vector
+          // For stereo ES7210: interleaved L/R data
+          const int16_t *samples = (const int16_t *)x.data();
+          int num_samples = x.size() / 2;  // 2 bytes per sample
 
-          if (num_samples > 0) {
-            // Get samples for both channels
-            // ES7210 with 2 mics: interleaved L/R data
-            for (int i = 0; i < num_samples && i < 64; i += 2) {
-              int16_t left = samples[i];
-              int16_t right = (i + 1 < num_samples) ? samples[i + 1] : samples[i];
-
-              // Update charts with real microphone data
-              lv_chart_set_next_value(id(chart_mic_left).obj,
-                                      lv_chart_get_series_next(id(chart_mic_left).obj, NULL),
-                                      left);
-              lv_chart_set_next_value(id(chart_mic_right).obj,
-                                      lv_chart_get_series_next(id(chart_mic_right).obj, NULL),
-                                      right);
-            }
+          if (num_samples >= 2) {
+            // Get one sample for each channel to update display
+            id(audio_sample_left) = samples[0];
+            id(audio_sample_right) = samples[1];
           }
+
+# =============================================================================
+# CHART UPDATE INTERVAL
+# =============================================================================
+interval:
+  - interval: 20ms
+    then:
+      - lvgl.chart.set_next_value:
+          id: chart_mic_left
+          series_index: 0
+          value: !lambda 'return id(audio_sample_left);'
+      - lvgl.chart.set_next_value:
+          id: chart_mic_right
+          series_index: 0
+          value: !lambda 'return id(audio_sample_right);'
 
 speaker:
   - platform: i2s_audio
