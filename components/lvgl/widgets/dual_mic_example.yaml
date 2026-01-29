@@ -67,11 +67,11 @@ interval:
     then:
       - lvgl.chart.set_next_value:
           id: chart_mic_left
-          series_index: 0
+          series_id: series_mic_left
           value: !lambda 'return id(audio_sample_left);'
       - lvgl.chart.set_next_value:
           id: chart_mic_right
-          series_index: 0
+          series_id: series_mic_right
           value: !lambda 'return id(audio_sample_right);'
 
 speaker:
