@@ -205,6 +205,58 @@ async def canvas_fill(config, action_id, template_arg, args):
 
 
 @automation.register_action(
+    "lvgl.canvas.invalidate",
+    ObjUpdateAction,
+    cv.Schema(
+        {
+            cv.GenerateID(CONF_ID): cv.use_id(lv_canvas_t),
+        },
+    ),
+)
+async def canvas_invalidate(config, action_id, template_arg, args):
+    """Force canvas refresh without using layer system."""
+    widget = await get_widgets(config)
+
+    async def do_invalidate(w: Widget):
+        from ..lvcode import lv_obj
+        lv_obj.invalidate(w.obj)
+
+    return await action_to_code(widget, do_invalidate, action_id, template_arg, args, config)
+
+
+@automation.register_action(
+    "lvgl.canvas.copy_buf",
+    ObjUpdateAction,
+    cv.Schema(
+        {
+            cv.GenerateID(CONF_ID): cv.use_id(lv_canvas_t),
+            cv.Required(CONF_SRC): lv_image,
+            cv.Required(CONF_X): pixels,
+            cv.Required(CONF_Y): pixels,
+        },
+    ),
+)
+async def canvas_copy_buf(config, action_id, template_arg, args):
+    """Copy an image buffer to the canvas at specified position."""
+    widget = await get_widgets(config)
+    src = await lv_image.process(config[CONF_SRC])
+    x = await pixels.process(config[CONF_X])
+    y = await pixels.process(config[CONF_Y])
+
+    async def do_copy(w: Widget):
+        # Get source image info and copy to canvas
+        # lv_canvas_copy_buf(canvas, to_copy, x, y, w, h)
+        from ..lvcode import lv_add
+        img_dsc = src.get_lv_image_dsc()
+        lv_add(cg.RawStatement(
+            f"lv_canvas_copy_buf({w.obj}, lv_image_get_buf({img_dsc}), "
+            f"{x}, {y}, {img_dsc}->header.w, {img_dsc}->header.h);"
+        ))
+
+    return await action_to_code(widget, do_copy, action_id, template_arg, args, config)
+
+
+@automation.register_action(
     "lvgl.canvas.set_pixels",
     ObjUpdateAction,
     cv.Schema(
