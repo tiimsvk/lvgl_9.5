@@ -158,237 +158,53 @@ class LottieType(WidgetType):
         add_lv_use("THORVG_INTERNAL")
         add_lv_use("VECTOR_GRAPHIC")
 
+        from ..lvcode import lv_obj, lv_add
+
         # Get dimensions - either from config or auto-detected from JSON
         if CONF_LOTTIE_WIDTH in config:
-            # Auto-detected from JSON file
             width = config[CONF_LOTTIE_WIDTH]
             height = config[CONF_LOTTIE_HEIGHT]
         else:
-            # Manually specified (required for src method)
             width = config[CONF_WIDTH]
             height = config[CONF_HEIGHT]
 
-        # Allocate render buffer for Lottie animation
-        # ARGB8888 format is required for vector graphics (4 bytes per pixel)
-        buf_size = literal(f"({width} * {height} * 4)")
-        lottie_buffer = lv.malloc_core(buf_size)
-
-        # Set buffer for Lottie rendering
-        lv.lottie_set_buffer(w.obj, width, height, lottie_buffer)
-
-        # Set widget size to match animation
-        from ..lvcode import lv_obj
+        # Set widget size
         lv_obj.set_size(w.obj, width, height)
 
-        # Load animation - Method 1: From filesystem
-        # NOTE: We DON'T use lv_lottie_set_src_file() because ThorVG parsing
-        # requires significant stack space (>32KB) which causes stack overflow
-        # on ESP32. Instead, we load the file to heap and use lv_lottie_set_src_data().
+        # Following LVGL example order:
+        # 1. lv_lottie_create() - already done by widget system
+        # 2. lv_lottie_set_src_data() - load data FIRST
+        # 3. lv_lottie_set_buffer() - set buffer AFTER
+
+        # Method 1: From filesystem
         if src := config.get(CONF_SRC):
-            from ..lvcode import lv_add
-            # Add required includes
-            cg.add_global(cg.RawExpression('#include <stdio.h>'))
-            cg.add_global(cg.RawExpression('#include "esp_heap_caps.h"'))
+            # Use lv_lottie_set_src_file directly like LVGL example
+            lv.lottie_set_src_file(w.obj, src)
 
-            # Define the global helper function and struct once
-            helper_code = '''
-// Lottie file loader helper - loads JSON to heap to avoid stack overflow
-#ifndef LOTTIE_LOADER_DEFINED
-#define LOTTIE_LOADER_DEFINED
-static bool lottie_load_from_file(lv_obj_t *obj, const char *path) {
-    ESP_LOGI("lottie", "Loading Lottie from: %s", path);
-
-    FILE *f = fopen(path, "rb");
-    if (f == NULL) {
-        ESP_LOGE("lottie", "Failed to open file: %s", path);
-        return false;
-    }
-
-    fseek(f, 0, SEEK_END);
-    long fsize = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    ESP_LOGI("lottie", "File size: %ld bytes", fsize);
-
-    // Allocate in PSRAM if available, +1 for null terminator
-    char *json_buf = (char *)heap_caps_malloc(fsize + 1, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    if (json_buf == NULL) {
-        // Fallback to regular malloc
-        json_buf = (char *)malloc(fsize + 1);
-    }
-
-    if (json_buf == NULL) {
-        fclose(f);
-        ESP_LOGE("lottie", "Failed to allocate %ld bytes", fsize);
-        return false;
-    }
-
-    size_t read_size = fread(json_buf, 1, fsize, f);
-    fclose(f);
-
-    if (read_size != (size_t)fsize) {
-        free(json_buf);
-        ESP_LOGE("lottie", "Read incomplete: %zu/%ld bytes", read_size, fsize);
-        return false;
-    }
-
-    json_buf[fsize] = '\\0';  // Null terminate for ThorVG parser
-
-    // Load the animation data
-    lv_lottie_set_src_data(obj, json_buf, fsize);
-    ESP_LOGI("lottie", "Lottie loaded successfully (%ld bytes)", fsize);
-
-    // Note: Buffer must stay allocated - LVGL/ThorVG needs it for playback
-    return true;
-}
-#endif
-'''
-            cg.add_global(cg.RawExpression(helper_code))
-
-            # Call the loader function
-            load_call = f'lottie_load_from_file({w.obj}, "{src}");'
-            lv_add(cg.RawStatement(load_call))
-
-        # Load animation - Method 2: From embedded data
-        # NOTE: ThorVG parsing requires significant stack space (>32KB).
-        # We create a dedicated FreeRTOS task with stack allocated in PSRAM
-        # to avoid stack overflow on ESP32.
+        # Method 2: From embedded data
         elif file_path := config.get(CONF_FILE):
-            from ..lvcode import lv_add
-
-            # Read the JSON file content
             with open(file_path, "rb") as f:
                 json_data = f.read()
 
-            # CRITICAL: Add null terminator for ThorVG JSON parser
+            # Add null terminator
             json_data_with_null = json_data + b'\x00'
 
-            # Create progmem array with the JSON data (including null terminator)
             raw_data_id = config[CONF_RAW_DATA_ID]
             prog_arr = cg.progmem_array(raw_data_id, list(json_data_with_null))
 
-            # Add required includes for FreeRTOS task with PSRAM stack
-            cg.add_global(cg.RawExpression('#include "freertos/FreeRTOS.h"'))
-            cg.add_global(cg.RawExpression('#include "freertos/task.h"'))
-            cg.add_global(cg.RawExpression('#include "freertos/semphr.h"'))
-            cg.add_global(cg.RawExpression('#include "esp_heap_caps.h"'))
+            # Load data FIRST (before buffer)
+            lv.lottie_set_src_data(w.obj, prog_arr, len(json_data))
 
-            # Define the global helper for loading Lottie in a task with PSRAM stack
-            helper_code = '''
-// Lottie loader with dedicated task using PSRAM stack
-// ThorVG parsing requires >32KB stack which exceeds ESP32 internal RAM limits
-#ifndef LOTTIE_TASK_LOADER_DEFINED
-#define LOTTIE_TASK_LOADER_DEFINED
+        # Create unique buffer name using widget id
+        widget_id = str(w.obj).replace("->", "_").replace(".", "_")
+        buf_name = f"lottie_buf_{widget_id}"
 
-typedef struct {
-    lv_obj_t *obj;
-    const void *data;
-    size_t data_size;
-    SemaphoreHandle_t done_sem;
-} lottie_task_params_t;
+        # Declare static buffer (like LVGL example: static uint8_t buf[64 * 64 * 4])
+        buf_size = width * height * 4
+        cg.add_global(cg.RawExpression(f"static uint8_t {buf_name}[{buf_size}]"))
 
-static void lottie_parse_task(void *arg) {
-    lottie_task_params_t *params = (lottie_task_params_t *)arg;
-
-    ESP_LOGI("lottie", "Parsing Lottie in dedicated task (stack in PSRAM)...");
-    lv_lottie_set_src_data(params->obj, params->data, params->data_size);
-    ESP_LOGI("lottie", "Lottie parsing complete!");
-
-    xSemaphoreGive(params->done_sem);
-    vTaskDelete(NULL);
-}
-
-static bool lottie_load_with_psram_stack(lv_obj_t *obj, const void *data, size_t data_size) {
-    ESP_LOGI("lottie", "Loading Lottie animation (%zu bytes) with PSRAM task stack...", data_size);
-
-    // Allocate 64KB stack in PSRAM
-    const size_t stack_size = 64 * 1024;
-    StackType_t *task_stack = (StackType_t *)heap_caps_malloc(stack_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    if (task_stack == NULL) {
-        ESP_LOGE("lottie", "Failed to allocate task stack in PSRAM, trying internal RAM...");
-        task_stack = (StackType_t *)malloc(stack_size);
-        if (task_stack == NULL) {
-            ESP_LOGE("lottie", "Failed to allocate task stack!");
-            return false;
-        }
-    }
-
-    // Allocate task control block in internal RAM (required by FreeRTOS)
-    StaticTask_t *task_tcb = (StaticTask_t *)heap_caps_malloc(sizeof(StaticTask_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    if (task_tcb == NULL) {
-        ESP_LOGE("lottie", "Failed to allocate task TCB!");
-        free(task_stack);
-        return false;
-    }
-
-    // Setup parameters
-    lottie_task_params_t params;
-    params.obj = obj;
-    params.data = data;
-    params.data_size = data_size;
-    params.done_sem = xSemaphoreCreateBinary();
-
-    if (params.done_sem == NULL) {
-        ESP_LOGE("lottie", "Failed to create semaphore!");
-        free(task_stack);
-        free(task_tcb);
-        return false;
-    }
-
-    // Create task with static allocation (stack in PSRAM)
-    TaskHandle_t task_handle = xTaskCreateStatic(
-        lottie_parse_task,
-        "lottie_parse",
-        stack_size / sizeof(StackType_t),
-        &params,
-        5,  // Priority
-        task_stack,
-        task_tcb
-    );
-
-    if (task_handle == NULL) {
-        ESP_LOGE("lottie", "Failed to create Lottie parsing task!");
-        vSemaphoreDelete(params.done_sem);
-        free(task_stack);
-        free(task_tcb);
-        return false;
-    }
-
-    // Wait for task to complete (max 60 seconds for complex animations)
-    ESP_LOGI("lottie", "Waiting for Lottie parsing to complete...");
-    bool success = xSemaphoreTake(params.done_sem, pdMS_TO_TICKS(60000)) == pdTRUE;
-
-    if (!success) {
-        ESP_LOGE("lottie", "Lottie parsing timed out!");
-    } else {
-        ESP_LOGI("lottie", "Lottie animation loaded successfully!");
-    }
-
-    // Cleanup
-    vSemaphoreDelete(params.done_sem);
-    free(task_stack);
-    free(task_tcb);
-
-    return success;
-}
-#endif
-'''
-            cg.add_global(cg.RawExpression(helper_code))
-
-            # Call the loader function with PSRAM stack
-            json_size = len(json_data)
-            load_call = f'lottie_load_with_psram_stack({w.obj}, {prog_arr}, {json_size});'
-            lv_add(cg.RawStatement(load_call))
-
-        # Set looping (requires accessing the internal animation)
-        # Note: In LVGL 9.4, use lv_lottie_get_anim() to get animation handle
-        if not config.get(CONF_LOOP, True):
-            # If not looping, set repeat count to 1
-            pass  # Default is looping, non-loop not directly supported in simple API
-
-        # Auto-start animation
-        if config.get(CONF_AUTO_START, True):
-            # Animation starts automatically when src is set
-            pass
+        # Set buffer AFTER loading data
+        lv_add(cg.RawStatement(f"lv_lottie_set_buffer({w.obj}, {width}, {height}, {buf_name});"))
 
 
 lottie_spec = LottieType()
@@ -409,7 +225,6 @@ async def lottie_start(config, action_id, template_arg, args):
     widget = await get_widgets(config)
 
     async def do_start(w: Widget):
-        # Get the animation handle and resume it
         lv.anim_start(lv.lottie_get_anim(w.obj))
 
     return await action_to_code(widget, do_start, action_id, template_arg, args)
@@ -430,7 +245,6 @@ async def lottie_stop(config, action_id, template_arg, args):
     widget = await get_widgets(config)
 
     async def do_stop(w: Widget):
-        # Delete the animation to stop it
         lv.anim_delete(w.obj, literal("NULL"))
 
     return await action_to_code(widget, do_stop, action_id, template_arg, args)
@@ -451,7 +265,6 @@ async def lottie_pause(config, action_id, template_arg, args):
     widget = await get_widgets(config)
 
     async def do_pause(w: Widget):
-        # Pause by setting animation to stopped state
         lv.anim_delete(w.obj, literal("NULL"))
 
     return await action_to_code(widget, do_pause, action_id, template_arg, args)
