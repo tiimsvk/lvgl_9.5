@@ -8,6 +8,9 @@
 #include "esp_log.h"
 #include <lvgl.h>
 
+#include "esphome/components/image/image.h"
+#endif  // USE_LVGL_IMAGE
+
 namespace esphome {
 namespace lvgl {
 
