@@ -22,7 +22,7 @@ struct LottieLoadParams {
     const char *file_path;
 };
 
-// Stack size for ThorVG parsing (48KB to be safe)
+// Stack size for ThorVG parsing (64KB to be safe)
 static constexpr size_t LOTTIE_TASK_STACK_SIZE = 64 * 1024;
 
 // Task function that loads lottie data with large PSRAM stack
