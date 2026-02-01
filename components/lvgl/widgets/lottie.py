@@ -53,8 +53,8 @@ from ..lvcode import lv
 from ..types import LvType, ObjUpdateAction
 from . import Widget, WidgetType, get_widgets
 
-# Global flag to track if helper code has been added
-_lottie_helper_added = False
+# Global flag to track if include has been added
+_lottie_include_added = False
 
 CONF_LOTTIE = "lottie"
 CONF_LOOP = "loop"
@@ -160,7 +160,7 @@ class LottieType(WidgetType):
         return ("LOTTIE", "THORVG_INTERNAL", "VECTOR_GRAPHIC")
 
     async def to_code(self, w: Widget, config):
-        global _lottie_helper_added
+        global _lottie_include_added
 
         add_lv_use("LOTTIE")
         add_lv_use("THORVG_INTERNAL")
@@ -179,129 +179,28 @@ class LottieType(WidgetType):
         # Set widget size
         lv_obj.set_size(w.obj, width, height)
 
-        # Add FreeRTOS PSRAM task helper code once
-        if not _lottie_helper_added:
-            _lottie_helper_added = True
-            # Add includes and helper struct/function for PSRAM stack task
-            cg.add_global(cg.RawExpression("""
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_heap_caps.h"
-
-// Lottie loader task parameters
-struct LottieLoadParams {
-    lv_obj_t *obj;
-    const void *data;
-    size_t data_size;
-    const char *file_path;
-    uint8_t *buffer;
-    int width;
-    int height;
-};
-
-// Stack size for ThorVG parsing (32KB should be enough)
-#define LOTTIE_TASK_STACK_SIZE (32 * 1024)
-
-// Task function that loads lottie data with large PSRAM stack
-static void lottie_load_task(void *param) {
-    LottieLoadParams *p = (LottieLoadParams *)param;
-
-    // Small delay to ensure we're not in middle of LVGL render cycle
-    vTaskDelay(pdMS_TO_TICKS(50));
-
-    // Load source data or file (ThorVG parsing happens here - needs large stack)
-    if (p->data != nullptr) {
-        lv_lottie_set_src_data(p->obj, p->data, p->data_size);
-    } else if (p->file_path != nullptr) {
-        lv_lottie_set_src_file(p->obj, p->file_path);
-    }
-
-    // Set buffer after loading
-    lv_lottie_set_buffer(p->obj, p->width, p->height, p->buffer);
-
-    // Free the params struct
-    heap_caps_free(param);
-
-    // Delete this task
-    vTaskDelete(NULL);
-}
-
-// Function to start lottie loading in a task with PSRAM stack
-static void lottie_load_async(lv_obj_t *obj, const void *data, size_t data_size,
-                               const char *file_path, uint8_t *buffer, int width, int height) {
-    // Allocate params in PSRAM
-    LottieLoadParams *params = (LottieLoadParams *)heap_caps_malloc(
-        sizeof(LottieLoadParams), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    if (params == nullptr) {
-        ESP_LOGE("lottie", "Failed to allocate params in PSRAM");
-        return;
-    }
-
-    params->obj = obj;
-    params->data = data;
-    params->data_size = data_size;
-    params->file_path = file_path;
-    params->buffer = buffer;
-    params->width = width;
-    params->height = height;
-
-    // Allocate stack in PSRAM
-    StackType_t *stack = (StackType_t *)heap_caps_malloc(
-        LOTTIE_TASK_STACK_SIZE, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    if (stack == nullptr) {
-        ESP_LOGE("lottie", "Failed to allocate stack in PSRAM");
-        heap_caps_free(params);
-        return;
-    }
-
-    // Allocate task control block in internal RAM (required by FreeRTOS)
-    StaticTask_t *tcb = (StaticTask_t *)heap_caps_malloc(
-        sizeof(StaticTask_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    if (tcb == nullptr) {
-        ESP_LOGE("lottie", "Failed to allocate TCB");
-        heap_caps_free(params);
-        heap_caps_free(stack);
-        return;
-    }
-
-    // Create task with static allocation (stack in PSRAM)
-    TaskHandle_t task = xTaskCreateStatic(
-        lottie_load_task,
-        "lottie_load",
-        LOTTIE_TASK_STACK_SIZE / sizeof(StackType_t),
-        params,
-        5,  // Priority
-        stack,
-        tcb
-    );
-
-    if (task == nullptr) {
-        ESP_LOGE("lottie", "Failed to create lottie load task");
-        heap_caps_free(params);
-        heap_caps_free(stack);
-        heap_caps_free(tcb);
-    }
-    // Note: stack and tcb will leak when task completes - acceptable for one-shot loading
-}
-"""))
+        # Add include for lottie loader helper (once)
+        if not _lottie_include_added:
+            _lottie_include_added = True
+            cg.add_global(cg.RawExpression('#include "esphome/components/lvgl/lottie_loader.h"'))
 
         # Create unique buffer name using widget id
         widget_id = str(w.obj).replace("->", "_").replace(".", "_")
         buf_name = f"lottie_buf_{widget_id}"
 
-        # Declare static buffer in PSRAM for rendering
+        # Declare static buffer pointer
         buf_size = width * height * 4
-        cg.add_global(cg.RawExpression(
-            f"static uint8_t *{buf_name} = nullptr"
-        ))
+        cg.add_global(cg.RawExpression(f"static uint8_t *{buf_name} = nullptr"))
 
-        # Allocate buffer in PSRAM at runtime and start async loading
+        # Allocate buffer in PSRAM and set it FIRST (before data loading)
+        # This ensures LVGL has a valid buffer even before animation data is loaded
         if src := config.get(CONF_SRC):
             # File from filesystem
             lv_add(cg.RawStatement(f"""
     {buf_name} = (uint8_t *)heap_caps_malloc({buf_size}, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if ({buf_name} != nullptr) {{
-        lottie_load_async({w.obj}, nullptr, 0, "{src}", {buf_name}, {width}, {height});
+        lv_lottie_set_buffer({w.obj}, {width}, {height}, {buf_name});
+        esphome::lvgl::lottie_load_async({w.obj}, nullptr, 0, "{src}");
     }} else {{
         ESP_LOGE("lottie", "Failed to allocate lottie buffer in PSRAM");
     }}"""))
@@ -319,7 +218,8 @@ static void lottie_load_async(lv_obj_t *obj, const void *data, size_t data_size,
             lv_add(cg.RawStatement(f"""
     {buf_name} = (uint8_t *)heap_caps_malloc({buf_size}, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if ({buf_name} != nullptr) {{
-        lottie_load_async({w.obj}, {prog_arr}, {len(json_data)}, nullptr, {buf_name}, {width}, {height});
+        lv_lottie_set_buffer({w.obj}, {width}, {height}, {buf_name});
+        esphome::lvgl::lottie_load_async({w.obj}, {prog_arr}, {len(json_data)}, nullptr);
     }} else {{
         ESP_LOGE("lottie", "Failed to allocate lottie buffer in PSRAM");
     }}"""))
