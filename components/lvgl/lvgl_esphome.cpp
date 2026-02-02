@@ -723,7 +723,6 @@ const lv_obj_class_t LV_ARCLABEL_CLASS = {
     .constructor_cb = lv_arclabel_constructor,
     .destructor_cb = lv_arclabel_destructor,
     .event_cb = lv_arclabel_event,
-    .instance_size = sizeof(lv_obj_t),
     .name = "lv_arclabel",
 };
 
