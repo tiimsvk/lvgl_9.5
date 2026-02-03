@@ -2,7 +2,7 @@
 LVGL ArcLabel Widget for ESPHome 2026+
 
 Supports:
-- text
+- text (set at creation and dynamically via lambda)
 - radius
 - start/end angles
 - rotation
@@ -14,12 +14,13 @@ Supports:
 """
 
 import esphome.config_validation as cv
-from esphome.const import CONF_ROTATION, CONF_TEXT
+from esphome.const import CONF_ROTATION, CONF_TEXT, CONF_ID
 from ..helpers import lvgl_components_required
 from ..lv_validation import lv_angle_degrees, lv_text, pixels
 from ..lvcode import lv
 from ..types import LvType
 from . import Widget, WidgetType
+from esphome.components import color
 
 # -------------------------------------------------------------------
 # Constants
@@ -62,7 +63,7 @@ ARCLABEL_SCHEMA = cv.Schema({
     cv.Optional(CONF_START_ANGLE, default=0): SIGNED_ANGLE,
     cv.Optional(CONF_END_ANGLE, default=360): SIGNED_ANGLE,
     cv.Optional(CONF_ROTATION, default=0): SIGNED_ANGLE,
-    cv.Optional(CONF_TEXT_COLOR, default=0xFFFFFF): cv.uint32_t,
+    cv.Optional(CONF_TEXT_COLOR, default=0xFFFFFF): color.Color,
     cv.Optional(CONF_DIRECTION, default="clockwise"): DIRECTION,
     cv.Optional(CONF_TEXT_VERTICAL_ALIGN, default="center"): TEXT_ALIGN,
     cv.Optional(CONF_TEXT_HORIZONTAL_ALIGN, default="center"): TEXT_ALIGN,
@@ -78,7 +79,7 @@ class ArcLabelType(WidgetType):
         super().__init__(
             CONF_ARCLABEL,
             lv_arclabel_t,
-            (CONF_ARCLABEL,),
+            (CONF_ID,),
             ARCLABEL_SCHEMA,
             modify_schema={}
         )
@@ -87,9 +88,7 @@ class ArcLabelType(WidgetType):
         """Generate C++ code for arc label widget configuration"""
         lvgl_components_required.add(CONF_ARCLABEL)
 
-        # -------------------------
-        # Set text
-        # -------------------------
+        # Set text (mandatory)
         text = await lv_text.process(config[CONF_TEXT])
         lv.arclabel_set_text(w.obj, text)
 
@@ -103,7 +102,7 @@ class ArcLabelType(WidgetType):
         rotation = config.get(CONF_ROTATION, 0)
         lv.arclabel_set_angle_size(w.obj, end_angle - start_angle)
 
-        # Widget size
+        # Widget size (ensure enough room)
         lv.obj_set_size(w.obj, radius * 2 + 50, radius * 2 + 50)
 
         # Total rotation
@@ -130,7 +129,6 @@ class ArcLabelType(WidgetType):
     def get_uses(self):
         """Arc label uses label component"""
         return ("label",)
-
 
 # -------------------------------------------------------------------
 # Register widget
