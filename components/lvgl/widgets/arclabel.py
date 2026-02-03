@@ -49,7 +49,7 @@ class ArcLabelType(WidgetType):
             (CONF_MAIN,),
             ARCLABEL_SCHEMA,
             modify_schema={
-                cv.Optional(CONF_TEXT): lv_text,  # ✅ permet lvgl.arclabel.update avec text
+                cv.Optional(CONF_TEXT): lv_text,
             },
         )
 
@@ -75,7 +75,7 @@ class ArcLabelType(WidgetType):
         lv.arclabel_set_angle_size(w.obj, angle_size)
 
         # Widget size
-        widget_size = radius * 2 + 20  # padding
+        widget_size = radius * 2 + 50  # padding
         lv.obj_set_size(w.obj, widget_size, widget_size)
 
         # Final rotation (LVGL uses 0.1° units)
