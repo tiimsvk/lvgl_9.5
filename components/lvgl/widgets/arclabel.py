@@ -11,7 +11,6 @@ Supports:
 - recolor
 - offset
 - text_color
-- text_font
 """
 
 import esphome.config_validation as cv
@@ -33,7 +32,6 @@ CONF_DIRECTION = "direction"
 CONF_TEXT_VERTICAL_ALIGN = "text_vertical_align"
 CONF_TEXT_HORIZONTAL_ALIGN = "text_horizontal_align"
 CONF_RECOLOR = "recolor"
-CONF_TEXT_FONT = "text_font"
 CONF_TEXT_COLOR = "text_color"
 CONF_OFFSET = "offset"
 
@@ -64,8 +62,7 @@ ARCLABEL_SCHEMA = cv.Schema({
     cv.Optional(CONF_START_ANGLE, default=0): SIGNED_ANGLE,
     cv.Optional(CONF_END_ANGLE, default=360): SIGNED_ANGLE,
     cv.Optional(CONF_ROTATION, default=0): SIGNED_ANGLE,
-    cv.Optional(CONF_TEXT_COLOR, default=0xFFFFFF): cv.uint32_t,  # couleur hex simple
-    cv.Optional(CONF_TEXT_FONT, default=None): cv.font,            # optionnel
+    cv.Optional(CONF_TEXT_COLOR, default=0xFFFFFF): cv.uint32_t,
     cv.Optional(CONF_DIRECTION, default="clockwise"): DIRECTION,
     cv.Optional(CONF_TEXT_VERTICAL_ALIGN, default="center"): TEXT_ALIGN,
     cv.Optional(CONF_TEXT_HORIZONTAL_ALIGN, default="center"): TEXT_ALIGN,
@@ -128,11 +125,6 @@ class ArcLabelType(WidgetType):
         # Text color
         lv.obj_set_style_text_color(w.obj, config.get(CONF_TEXT_COLOR), 0)
 
-        # Font (optionnel)
-        font = config.get(CONF_TEXT_FONT)
-        if font is not None:
-            lv.obj_set_style_text_font(w.obj, font, 0)
-
     def get_uses(self):
         """Arc label uses label component"""
         return ("label",)
@@ -142,6 +134,7 @@ class ArcLabelType(WidgetType):
 # Register widget
 # -------------------------------------------------------------------
 arclabel_spec = ArcLabelType()
+
 
 
 
