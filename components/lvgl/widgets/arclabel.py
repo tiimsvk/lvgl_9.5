@@ -44,12 +44,16 @@ lv_arclabel_t = LvType("lv_arclabel_t")
 # -------------------------------------------------------------------
 SIGNED_ANGLE = cv.int_range(min=-360, max=360)
 
-DIRECTION = cv.enum({"clockwise": lv.LV_ARCLABEL_DIR_CLOCKWISE,
-                     "counter_clockwise": lv.LV_ARCLABEL_DIR_COUNTER_CLOCKWISE})
+DIRECTION = cv.enum({
+    "clockwise": lv.LV_ARCLABEL_DIR_CLOCKWISE,
+    "counter_clockwise": lv.LV_ARCLABEL_DIR_COUNTER_CLOCKWISE
+})
 
-TEXT_ALIGN = cv.enum({"leading": lv.LV_ARCLABEL_TEXT_ALIGN_LEADING,
-                      "center": lv.LV_ARCLABEL_TEXT_ALIGN_CENTER,
-                      "trailing": lv.LV_ARCLABEL_TEXT_ALIGN_TRAILING})
+TEXT_ALIGN = cv.enum({
+    "leading": lv.LV_ARCLABEL_TEXT_ALIGN_LEADING,
+    "center": lv.LV_ARCLABEL_TEXT_ALIGN_CENTER,
+    "trailing": lv.LV_ARCLABEL_TEXT_ALIGN_TRAILING
+})
 
 # -------------------------------------------------------------------
 # ArcLabel schema
@@ -60,7 +64,7 @@ ARCLABEL_SCHEMA = cv.Schema({
     cv.Optional(CONF_START_ANGLE, default=0): SIGNED_ANGLE,
     cv.Optional(CONF_END_ANGLE, default=360): SIGNED_ANGLE,
     cv.Optional(CONF_ROTATION, default=0): SIGNED_ANGLE,
-    cv.Optional(CONF_TEXT_COLOR, default=0xFFFFFF): cv.color_hex,
+    cv.Optional(CONF_TEXT_COLOR, default=0xFFFFFF): cv.Color,
     cv.Optional(CONF_TEXT_FONT, default=None): cv.maybe(cv.font),
     cv.Optional(CONF_DIRECTION, default="clockwise"): DIRECTION,
     cv.Optional(CONF_TEXT_VERTICAL_ALIGN, default="center"): TEXT_ALIGN,
@@ -138,6 +142,7 @@ class ArcLabelType(WidgetType):
 # Register widget
 # -------------------------------------------------------------------
 arclabel_spec = ArcLabelType()
+
 
 
 
