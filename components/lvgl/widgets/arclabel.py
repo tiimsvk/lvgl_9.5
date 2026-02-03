@@ -58,18 +58,19 @@ class ArcLabelType(WidgetType):
         radius = await pixels.process(config[CONF_RADIUS])
         lv.arclabel_set_radius(w.obj, radius)
 
-        # LVGL arclabel uses angle_size instead of start/end angles
-        # Calculate the total arc span
+        # Set start angle
         start_angle = await lv_angle_degrees.process(config[CONF_START_ANGLE])
+        lv.arclabel_set_start_angle(w.obj, start_angle)
+
+        # Set angle size (end_angle - start_angle)
         end_angle = await lv_angle_degrees.process(config[CONF_END_ANGLE])
         angle_size = end_angle - start_angle
         lv.arclabel_set_angle_size(w.obj, angle_size)
 
-        # Note: LVGL native arclabel doesn't have set_start_angle or set_rotation
-        # These would need to be handled differently or the widget rotated as a whole
+        # Set rotation if specified
         if config[CONF_ROTATION] != 0:
             rotation = await lv_angle_degrees.process(config[CONF_ROTATION])
-            # Use object rotation instead (LVGL uses 0.1 degree units)
+            # Use object rotation (LVGL uses 0.1 degree units)
             lv.obj_set_style_transform_rotation(w.obj, rotation * 10, 0)
 
     def get_uses(self):
