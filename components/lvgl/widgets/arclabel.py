@@ -24,7 +24,6 @@ CONF_ARCLABEL = "arclabel"
 
 lv_arclabel_t = LvType("lv_arclabel_t")
 
-
 # Arc label schema
 ARCLABEL_SCHEMA = cv.Schema(
     {
@@ -35,8 +34,6 @@ ARCLABEL_SCHEMA = cv.Schema(
         cv.Optional(CONF_ROTATION, default=0): lv_angle_degrees,
     }
 )
-
-
 
 class ArcLabelType(WidgetType):
     def __init__(self):
@@ -62,22 +59,28 @@ class ArcLabelType(WidgetType):
         radius = await pixels.process(config.get(CONF_RADIUS, 100))
         lv.arclabel_set_radius(w.obj, radius)
 
-        # Signed angles (use defaults if not provided)
+        # Retrieve angles and rotation
         start_angle = config.get(CONF_START_ANGLE, 0)
         end_angle = config.get(CONF_END_ANGLE, 360)
         rotation = config.get(CONF_ROTATION, 0)
 
-        # Arc size (span)
+        # Apply rotation by adjusting start_angle
+        start_angle += rotation
+        if start_angle >= 360:
+            start_angle -= 360
+        elif start_angle < 0:
+            start_angle += 360
+
+        # Calculate angle span
         angle_size = end_angle - start_angle
+        if angle_size < 0:
+            angle_size += 360
+
         lv.arclabel_set_angle_size(w.obj, angle_size)
 
-        # Widget size
-        widget_size = radius * 2 + 50  # padding
+        # Widget size (padding)
+        widget_size = radius * 2 + 50
         lv.obj_set_size(w.obj, widget_size, widget_size)
-
-        # Final rotation (LVGL uses 0.1° units)
-        total_rotation = start_angle + rotation
-        lv.obj_set_style_transform_rotation(w.obj, total_rotation * 10, 0)
 
     async def to_code_update(self, w: Widget, config):
         """Allow updating text dynamically via lvgl.arclabel.update"""
@@ -88,7 +91,6 @@ class ArcLabelType(WidgetType):
     def get_uses(self):
         """Arc label uses label component"""
         return ("label",)
-
 
 # Global instance
 arclabel_spec = ArcLabelType()
