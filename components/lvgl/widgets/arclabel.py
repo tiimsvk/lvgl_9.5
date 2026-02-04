@@ -2,11 +2,11 @@
 LVGL v9.4 Arc Label Widget Implementation
 
 The arc label widget displays text along a curved path (arc).
-This is an advanced widget for circular/curved text displays.
+Advanced widget for circular/curved text displays.
 """
 
 import esphome.config_validation as cv
-from esphome.const import CONF_ROTATION, CONF_TEXT
+from esphome.const import CONF_ROTATION, CONF_TEXT, CONF_X, CONF_Y
 
 from ..defines import (
     CONF_END_ANGLE,
@@ -28,6 +28,8 @@ lv_arclabel_t = LvType("lv_arclabel_t")
 ARCLABEL_SCHEMA = cv.Schema(
     {
         cv.Required(CONF_TEXT): lv_text,
+        cv.Optional(CONF_X, default=0): lv_int,
+        cv.Optional(CONF_Y, default=0): lv_int,
         cv.Optional(CONF_RADIUS, default=100): pixels,
         cv.Optional(CONF_START_ANGLE, default=0): lv_angle_degrees,
         cv.Optional(CONF_END_ANGLE, default=360): lv_angle_degrees,
@@ -55,32 +57,33 @@ class ArcLabelType(WidgetType):
         text = await lv_text.process(config[CONF_TEXT])
         lv.arclabel_set_text(w.obj, text)
 
-        # Set radius (use default if not provided)
+        # Set radius
         radius = await pixels.process(config.get(CONF_RADIUS, 100))
         lv.arclabel_set_radius(w.obj, radius)
 
-        # Retrieve angles and rotation
+        # Get x, y
+        x = config.get(CONF_X, 0)
+        y = config.get(CONF_Y, 0)
+
+        # Get angles and rotation
         start_angle = config.get(CONF_START_ANGLE, 0)
         end_angle = config.get(CONF_END_ANGLE, 360)
         rotation = config.get(CONF_ROTATION, 0)
 
-        # Apply rotation by adjusting start_angle
-        start_angle += rotation
-        if start_angle >= 360:
-            start_angle -= 360
-        elif start_angle < 0:
-            start_angle += 360
+        # Apply rotation by shifting start_angle
+        start_angle = (start_angle + rotation) % 360
+        end_angle = end_angle % 360
 
-        # Calculate angle span
-        angle_size = end_angle - start_angle
-        if angle_size < 0:
-            angle_size += 360
-
+        # Compute angle span
+        angle_size = (end_angle - start_angle) % 360
         lv.arclabel_set_angle_size(w.obj, angle_size)
 
-        # Widget size (padding)
-        widget_size = radius * 2 + 50
+        # Set widget size proportional to radius + padding
+        widget_size = radius * 2 + 20
         lv.obj_set_size(w.obj, widget_size, widget_size)
+
+        # Center the object at (x, y)
+        lv.obj_set_pos(w.obj, x - widget_size // 2, y - widget_size // 2)
 
     async def to_code_update(self, w: Widget, config):
         """Allow updating text dynamically via lvgl.arclabel.update"""
@@ -94,6 +97,7 @@ class ArcLabelType(WidgetType):
 
 # Global instance
 arclabel_spec = ArcLabelType()
+
 
 
 
