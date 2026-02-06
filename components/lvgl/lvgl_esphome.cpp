@@ -693,6 +693,7 @@ lv_obj_t *lv_container_create(lv_obj_t *parent) {
   lv_obj_class_init_obj(obj);
   return obj;
 }
+
 }  // namespace esphome::lvgl
 
 lv_result_t lv_mem_test_core() { return LV_RESULT_OK; }
