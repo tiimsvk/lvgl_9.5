@@ -76,6 +76,8 @@ static int32_t ppa_evaluate(lv_draw_unit_t * u, lv_draw_task_t * t)
 {
     LV_UNUSED(u);
 
+    if(t == NULL || t->draw_dsc == NULL || t->target_layer == NULL) return 0;
+
     switch(t->type) {
         case LV_DRAW_TASK_TYPE_FILL: {
             const lv_draw_fill_dsc_t * dsc = (const lv_draw_fill_dsc_t *)t->draw_dsc;
@@ -84,6 +86,7 @@ static int32_t ppa_evaluate(lv_draw_unit_t * u, lv_draw_task_t * t)
             if(dsc->opa < (lv_opa_t)LV_OPA_MAX) return 0;
 
             lv_draw_buf_t * draw_buf = t->target_layer->draw_buf;
+            if(draw_buf == NULL) return 0;
             if(!ppa_dest_cf_supported((lv_color_format_t)draw_buf->header.cf)) return 0;
 
             if(t->preference_score > 70) {
@@ -103,6 +106,7 @@ static int32_t ppa_evaluate(lv_draw_unit_t * u, lv_draw_task_t * t)
             if(!ppa_src_cf_supported((lv_color_format_t)dsc->header.cf)) return 0;
 
             lv_draw_buf_t * dest_buf = t->target_layer->draw_buf;
+            if(dest_buf == NULL) return 0;
             if(!ppa_dest_cf_supported((lv_color_format_t)dest_buf->header.cf)) return 0;
 
             if(t->preference_score > 70) {
@@ -150,11 +154,14 @@ static int32_t ppa_delete(lv_draw_unit_t * draw_unit)
 
 static void ppa_execute_drawing(lv_draw_ppa_unit_t * u)
 {
-    lv_draw_task_t * t         = u->task_act;
-    lv_layer_t * layer         = t->target_layer;
-    lv_draw_buf_t * buf        = layer->draw_buf;
-    lv_area_t area;
+    lv_draw_task_t * t = u->task_act;
+    if(t == NULL || t->target_layer == NULL) return;
 
+    lv_layer_t * layer = t->target_layer;
+    lv_draw_buf_t * buf = layer->draw_buf;
+    if(buf == NULL || buf->data == NULL) return;
+
+    lv_area_t area;
     if(!lv_area_intersect(&area, &t->area, &t->clip_area)) return;
     lv_draw_buf_invalidate_cache(buf, &area);
 

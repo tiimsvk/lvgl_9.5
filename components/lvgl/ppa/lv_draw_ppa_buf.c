@@ -22,7 +22,9 @@ static void invalidate_cache(const lv_draw_buf_t * draw_buf, const lv_area_t * a
 void lv_draw_buf_ppa_init_handlers(void)
 {
     lv_draw_buf_handlers_t * handlers = lv_draw_buf_get_handlers();
-    handlers->invalidate_cache_cb = invalidate_cache;
+    if(handlers != NULL) {
+        handlers->invalidate_cache_cb = invalidate_cache;
+    }
 }
 
 /**********************
@@ -32,6 +34,7 @@ void lv_draw_buf_ppa_init_handlers(void)
 static void invalidate_cache(const lv_draw_buf_t * draw_buf, const lv_area_t * area)
 {
     LV_UNUSED(area);
+    if(draw_buf == NULL || draw_buf->data == NULL || draw_buf->data_size == 0) return;
     esp_cache_msync(draw_buf->data, draw_buf->data_size,
                     ESP_CACHE_MSYNC_FLAG_DIR_C2M | ESP_CACHE_MSYNC_FLAG_TYPE_DATA);
 }
