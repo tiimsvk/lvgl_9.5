@@ -12,14 +12,7 @@ substitutions:
   error_illustration_file: https://github.com/esphome/wake-word-voice-assistants/raw/main/casita/error_320_240.png
   timer_finished_illustration_file: https://raw.githubusercontent.com/youkorr/speaker-box/refs/heads/main/images/timer.png
 
-  #camera
-   
-  #frigate1: rtsp://Tapoone:Tapoone132@192.168.1.56:554/stream1 
 
-  frigate: "http://192.168.1.38:8123/local/llmvision/frigate1.jpg"
-
-  #wallpaper: "http://192.168.1.38:8123/local/llmvision/abstrac.png"
-  #mediaplayer
   media_player_entity: "media_player.p4mini_esp32_p4_media_player"
 
 
@@ -243,15 +236,26 @@ time:
 ##############################################################################################################################################################################################
 external_components:
 
-  - source: github://pr#12514
-    components: [mipi_dsi]
-    refresh: 1h
+  #- source: github://pr#12514
+    #components: [mipi_dsi]
+    #refresh: 1h
+  - source: github://pr#12312
+    components: [font]
+    refresh: 1h    
+    
+  - source:
+      type: git
+      url: https://github.com/youkorr/lvgl_9.4
+      ref: main 
+    components: [lvgl, image]
+    refresh: always   
+
   - source:
       type: git
       url: https://github.com/youkorr/test2_esp_video_esphome
-      ref: claude/fix-lvgl-import-error-Xuy01 #claude/fix-esp-video-errors-Ln67h #claude/fix-mjpeg-streaming-seuCV
-    components: [esp_cam_sensor, esp_video, lvgl_camera_display, sd_mmc_card, webdavbox3, storage, simple_video_player, pedestrian_detection, lvgl, font, image, network_camera]
-    refresh: 0s
+      ref: main
+    components: [esp_video, esp_cam_sensor, sd_mmc_card, webdavbox3, storage, lvgl_camera_display, simple_video_player, network_camera, face_detection]
+    refresh: always 
 
 # ============================================================================
 # ESP-Video Core 
@@ -261,7 +265,6 @@ esp_video:
   i2c_id: bsp_bus
   xclk_pin: GPIO36
   xclk_freq: 24000000
-  enable_h264: false
   enable_jpeg: true
   enable_isp: true
   use_heap_allocator: true
@@ -476,20 +479,20 @@ touchscreen:
       - light.turn_on: backlight          
     transform:
       swap_xy: true
-      mirror_x: false
-      mirror_y: true  
+      mirror_x: true
+      mirror_y: false  
 
 
 display:
   - platform: mipi_dsi
     id: main_display
-    model: JC4880P443C
+    model: JC4880P443
     update_interval: never
     auto_clear_enabled: false
-    rotation: 90
-    #dimensions:
-      #height: 800
-      #width: 480
+    rotation: 270
+    dimensions:
+      height: 800
+      width: 480
 
 captive_portal:
 
