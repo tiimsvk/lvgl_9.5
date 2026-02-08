@@ -189,7 +189,7 @@ class LottieType(WidgetType):
         # Add include for lottie loader helper (once)
         if not _lottie_include_added:
             _lottie_include_added = True
-            cg.add_global(cg.RawExpression('#include "esphome/components/lvgl/lottie_loader.h"'))
+            cg.add_global(cg.RawStatement('#include "esphome/components/lvgl/lottie_loader.h"'))
 
         # Create unique buffer name using widget id
         widget_id = str(w.obj).replace("->", "_").replace(".", "_")
