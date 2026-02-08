@@ -6,8 +6,8 @@
  *
  * NOTE: We do NOT set the global invalidate_cache_cb handler because
  * it would affect ALL draw operations (software renderer included).
- * esp_cache_msync crashes if called on non-cacheable or unaligned memory.
- * Instead, cache sync is done directly in ppa_execute_drawing().
+ * Cache sync is done per-operation in PPA dispatch, and only for
+ * buffers in external (PSRAM) memory which is cached.
  */
 
 #include "sdkconfig.h"
@@ -15,22 +15,25 @@
 
 #include "lv_draw_ppa_private.h"
 #include "lv_draw_ppa.h"
+#include "esp_memory_utils.h"
 
 /**********************
  *   GLOBAL FUNCTIONS
  **********************/
 void lv_draw_buf_ppa_init_handlers(void)
 {
-    /* Intentionally empty.
-     * We do NOT set the global invalidate_cache_cb because it would be
-     * called for ALL draw buffers, including software renderer ones
-     * that may not be in cache-aligned PSRAM.
-     * Cache operations are done directly in ppa_execute_drawing(). */
+    /* Intentionally empty - see file header comment */
 }
 
 void lv_draw_ppa_cache_sync(lv_draw_buf_t * buf)
 {
     if(buf == NULL || buf->data == NULL || buf->data_size == 0) return;
+
+    /* Only sync if buffer is in external (PSRAM) memory, which is cached.
+     * Internal SRAM is not cached on ESP32-P4, so esp_cache_msync would
+     * either be a no-op or could crash on non-cacheable regions. */
+    if(!esp_ptr_external_ram(buf->data)) return;
+
     esp_cache_msync(buf->data, buf->data_size,
                     ESP_CACHE_MSYNC_FLAG_DIR_C2M | ESP_CACHE_MSYNC_FLAG_TYPE_DATA);
 }
