@@ -3,6 +3,11 @@
  * Fixed PPA buffer cache handling for LVGL 9.4 on ESP32-P4
  * Backported from https://github.com/lvgl/lvgl/pull/9162
  * Adapted for C++ compilation (ESPHome build system)
+ *
+ * NOTE: We do NOT set the global invalidate_cache_cb handler because
+ * it would affect ALL draw operations (software renderer included).
+ * esp_cache_msync crashes if called on non-cacheable or unaligned memory.
+ * Instead, cache sync is done directly in ppa_execute_drawing().
  */
 
 #include "sdkconfig.h"
@@ -12,30 +17,21 @@
 #include "lv_draw_ppa.h"
 
 /**********************
- *  STATIC PROTOTYPES
- **********************/
-static void invalidate_cache(const lv_draw_buf_t * draw_buf, const lv_area_t * area);
-
-/**********************
  *   GLOBAL FUNCTIONS
  **********************/
 void lv_draw_buf_ppa_init_handlers(void)
 {
-    lv_draw_buf_handlers_t * handlers = lv_draw_buf_get_handlers();
-    if(handlers != NULL) {
-        handlers->invalidate_cache_cb = invalidate_cache;
-    }
+    /* Intentionally empty.
+     * We do NOT set the global invalidate_cache_cb because it would be
+     * called for ALL draw buffers, including software renderer ones
+     * that may not be in cache-aligned PSRAM.
+     * Cache operations are done directly in ppa_execute_drawing(). */
 }
 
-/**********************
- *   STATIC FUNCTIONS
- **********************/
-
-static void invalidate_cache(const lv_draw_buf_t * draw_buf, const lv_area_t * area)
+void lv_draw_ppa_cache_sync(lv_draw_buf_t * buf)
 {
-    LV_UNUSED(area);
-    if(draw_buf == NULL || draw_buf->data == NULL || draw_buf->data_size == 0) return;
-    esp_cache_msync(draw_buf->data, draw_buf->data_size,
+    if(buf == NULL || buf->data == NULL || buf->data_size == 0) return;
+    esp_cache_msync(buf->data, buf->data_size,
                     ESP_CACHE_MSYNC_FLAG_DIR_C2M | ESP_CACHE_MSYNC_FLAG_TYPE_DATA);
 }
 

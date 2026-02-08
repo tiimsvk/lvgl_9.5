@@ -41,6 +41,8 @@ void lv_draw_ppa_fill(lv_draw_task_t * t, const lv_draw_fill_dsc_t * dsc,
 void lv_draw_ppa_img(lv_draw_task_t * t, const lv_draw_image_dsc_t * dsc,
                      const lv_area_t * coords);
 
+void lv_draw_ppa_cache_sync(lv_draw_buf_t * buf);
+
 /**********************
  *      MACROS
  **********************/

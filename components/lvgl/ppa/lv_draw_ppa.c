@@ -163,20 +163,23 @@ static void ppa_execute_drawing(lv_draw_ppa_unit_t * u)
 
     lv_area_t area;
     if(!lv_area_intersect(&area, &t->area, &t->clip_area)) return;
-    lv_draw_buf_invalidate_cache(buf, &area);
+
+    /* Flush CPU cache to memory before PPA reads the buffer */
+    lv_draw_ppa_cache_sync(buf);
 
     switch(t->type) {
         case LV_DRAW_TASK_TYPE_FILL:
             lv_draw_ppa_fill(t, (lv_draw_fill_dsc_t *)t->draw_dsc, &area);
-            lv_draw_buf_invalidate_cache(buf, &area);
             break;
         case LV_DRAW_TASK_TYPE_IMAGE:
             lv_draw_ppa_img(t, (lv_draw_image_dsc_t *)t->draw_dsc, &area);
-            lv_draw_buf_invalidate_cache(buf, &area);
             break;
         default:
             break;
     }
+
+    /* Flush after PPA wrote to the buffer */
+    lv_draw_ppa_cache_sync(buf);
 }
 
 #endif /* CONFIG_SOC_PPA_SUPPORTED */
