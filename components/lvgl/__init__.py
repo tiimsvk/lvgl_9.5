@@ -219,19 +219,20 @@ async def to_code(configs):
     df.add_define("_LV_KCONFIG_PRESENT")
     # Memory alignment configuration for LVGL 9.4
     df.add_define("LV_DRAW_BUF_STRIDE_ALIGN", "1")  # LVGL default
+    # Keep LV_DRAW_BUF_ALIGN at LVGL default (4). Setting higher values
+    # causes crashes because LVGL's internal stack/static buffers can't meet
+    # stricter alignment. The custom lv_malloc_core() already provides 64-byte
+    # aligned heap allocations for the actual draw buffers on ESP32.
+    df.add_define("LV_DRAW_BUF_ALIGN", "4")
     use_ppa = config_0.get(CONF_USE_PPA, False)
     if use_ppa:
-        # PPA on ESP32-P4 requires 64-byte alignment for cache line compatibility
         # Do NOT set LV_USE_PPA=1 in lv_conf.h: the LVGL 9.4 PPA code is buggy.
         # Instead we compile our own fixed PPA files (backport of PR #9162)
         # and call lv_draw_ppa_init() from lvgl_esphome.cpp after lv_init().
-        df.add_define("LV_DRAW_BUF_ALIGN", "64")
+        # PPA evaluate checks buffer alignment at runtime before claiming tasks.
         cg.add_define("USE_LVGL_PPA")
         ppa_dir = Path(__file__).parent / "ppa"
         cg.add_build_flag(f"-I{ppa_dir}")
-    else:
-        # LVGL default alignment (no PPA hardware acceleration)
-        df.add_define("LV_DRAW_BUF_ALIGN", "4")
     df.add_define("LV_USE_STDLIB_MALLOC", "LV_STDLIB_CUSTOM")
 
     # ============================================

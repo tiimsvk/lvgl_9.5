@@ -15,6 +15,15 @@
  *      DEFINES
  *********************/
 #define DRAW_UNIT_ID_PPA 120
+#define PPA_BUF_ALIGN     16  /* PPA needs at least 16-byte aligned buffers (128-bit burst) */
+
+/* Check if a draw buffer is suitable for PPA (non-NULL, aligned, has data) */
+static inline bool ppa_buf_usable(lv_draw_buf_t * buf)
+{
+    if(buf == NULL || buf->data == NULL || buf->data_size == 0) return false;
+    if(((uintptr_t)buf->data) % PPA_BUF_ALIGN != 0) return false;
+    return true;
+}
 
 /**********************
  *  STATIC PROTOTYPES
@@ -86,7 +95,7 @@ static int32_t ppa_evaluate(lv_draw_unit_t * u, lv_draw_task_t * t)
             if(dsc->opa < (lv_opa_t)LV_OPA_MAX) return 0;
 
             lv_draw_buf_t * draw_buf = t->target_layer->draw_buf;
-            if(draw_buf == NULL) return 0;
+            if(!ppa_buf_usable(draw_buf)) return 0;
             if(!ppa_dest_cf_supported((lv_color_format_t)draw_buf->header.cf)) return 0;
 
             if(t->preference_score > 70) {
@@ -106,7 +115,7 @@ static int32_t ppa_evaluate(lv_draw_unit_t * u, lv_draw_task_t * t)
             if(!ppa_src_cf_supported((lv_color_format_t)dsc->header.cf)) return 0;
 
             lv_draw_buf_t * dest_buf = t->target_layer->draw_buf;
-            if(dest_buf == NULL) return 0;
+            if(!ppa_buf_usable(dest_buf)) return 0;
             if(!ppa_dest_cf_supported((lv_color_format_t)dest_buf->header.cf)) return 0;
 
             if(t->preference_score > 70) {
