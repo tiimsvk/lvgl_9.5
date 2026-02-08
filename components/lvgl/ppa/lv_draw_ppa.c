@@ -51,10 +51,11 @@ void lv_draw_ppa_init(void)
     ppa_client_config_t cfg;
     lv_memzero(&cfg, sizeof(cfg));
 
-    /* Register SRM client */
+    /* Register SRM client - use 64-byte burst to reduce SPIRAM bandwidth
+     * contention with DSI and prevent underrun (PR #9612) */
     cfg.oper_type = PPA_OPERATION_SRM;
     cfg.max_pending_trans_num = 1;
-    cfg.data_burst_length = PPA_DATA_BURST_LENGTH_128;
+    cfg.data_burst_length = PPA_DATA_BURST_LENGTH_64;
 
     res = ppa_register_client(&cfg, &draw_ppa_unit->srm_client);
     if(res != ESP_OK) {
