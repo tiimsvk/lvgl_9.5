@@ -198,7 +198,8 @@ void LvglComponent::show_prev_page(lv_scr_load_anim_t anim, uint32_t time) {
 size_t LvglComponent::get_current_page() const { return this->current_page_; }
 bool LvPageType::is_showing() const { return this->parent_->get_current_page() == this->index; }
 
-void LvglComponent::draw_buffer_(const lv_area_t *area, lv_color_data *ptr) {
+void LvglComponent::draw_buffer_(const lv_area_t *area,
+                                 lv_color_data *ptr) {
     /* --------------------------------------------------------------
      * 1️⃣  Coordonnées et dimensions brutes du rectangle LVGL
      * -------------------------------------------------------------- */
@@ -224,7 +225,7 @@ void LvglComponent::draw_buffer_(const lv_area_t *area, lv_color_data *ptr) {
      * 4️⃣  Traitement selon la rotation demandée
      * -------------------------------------------------------------- */
     if (this->rotation == display::DISPLAY_ROTATION_0_DEGREES) {
-        /* Aucun traitement – on transmet le buffer tel quel */
+        /* Pas de rotation – on transmet le buffer tel quel */
         dst = ptr;
     }
     /* -------------------- 90° -------------------- */
@@ -237,8 +238,8 @@ void LvglComponent::draw_buffer_(const lv_area_t *area, lv_color_data *ptr) {
         }
 
         /* Nouvelles coordonnées du coin supérieur‑gauche */
-        int new_x1 = area->y1;                                      // ancien Y devient X
-        int new_y1 = this->width_ - area->x1 - width;               // calcul basé sur la largeur brute
+        int new_x1 = area->y1;                              // ancien Y devient X
+        int new_y1 = this->height_ - area->x1 - width;      // basé sur la hauteur brute
         x1 = new_x1;
         y1 = new_y1;
 
@@ -263,9 +264,9 @@ void LvglComponent::draw_buffer_(const lv_area_t *area, lv_color_data *ptr) {
         x1 = this->width_  - area->x1 - width;   // largeur brute
         y1 = this->height_ - area->y1 - height;  // hauteur brute
 
-        /* Dimensions après rotation (elles restent les mêmes) */
-        width  = w_rounded;   // largeur arrondie
-        height = h_rounded;   // hauteur arrondie
+        /* Dimensions restent les mêmes, on applique l’arrondi */
+        width  = w_rounded;
+        height = h_rounded;
     }
     /* -------------------- 270° -------------------- */
     else if (this->rotation == display::DISPLAY_ROTATION_270_DEGREES) {
@@ -287,14 +288,21 @@ void LvglComponent::draw_buffer_(const lv_area_t *area, lv_color_data *ptr) {
         int new_height = width;    // hauteur = ancienne largeur
 
         /* Application de l’arrondi */
-        width  = h_rounded;       // largeur arrondie
-        height = w_rounded;       // hauteur arrondie
+        width  = h_rounded;
+        height = w_rounded;
+    }
+    else {
+        /* Fallback – aucune rotation reconnue */
+        dst = ptr;
     }
 
     /* --------------------------------------------------------------
      * 5️⃣  Envoi du buffer au driver d’affichage
      * -------------------------------------------------------------- */
     for (auto *display : this->displays_) {
+        ESP_LOGV(TAG,
+                 "draw buffer x1=%d, y1=%d, width=%d, height=%d",
+                 x1, y1, width, height);
         display->draw_pixels_at(
             x1,
             y1,
