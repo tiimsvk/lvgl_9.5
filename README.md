@@ -10,6 +10,22 @@ Ce guide documente **tous les 35 widgets** disponibles dans l'implémentation LV
 - [Widgets de Conteneur](#widgets-de-conteneur)
 - [Widgets Avancés](#widgets-avancés)
 
+
+https://github.com/user-attachments/assets/c29243a6-fbc9-44cf-8501-f5bc01b39af0
+
+
+
+https://github.com/user-attachments/assets/26e2a9c1-5540-404c-a0c1-53d4524c6d53
+
+
+
+https://github.com/user-attachments/assets/3a42fb70-9d3f-4c71-9a18-7fff889b6ed3
+
+
+
+https://github.com/user-attachments/assets/a6629c2b-396a-4d89-9f7c-90727d1ad6d4
+
+
 ---
 
 
@@ -550,8 +566,6 @@ lvgl:
 ```
 
 
-https://github.com/user-attachments/assets/eb605047-a967-4733-9d66-9e9e5ef51b8f
-
 
 **Types de graphiques**:
 - `LINE`: Courbe linéaire
@@ -634,14 +648,6 @@ lvgl:
         height: 200       
 
 ```
-
-
-https://github.com/user-attachments/assets/3680ca67-fdab-4294-bc66-06f6fff5f434
-
-
-
-https://github.com/user-attachments/assets/fb464595-5995-4599-ab06-7c6819a0c7b8
-
 
 **Avantages**:
 - Animations 60 FPS ultra fluides
