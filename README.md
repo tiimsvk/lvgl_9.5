@@ -14,6 +14,14 @@ Ce guide documente **tous les 35 widgets** disponibles dans l'implémentation LV
 https://github.com/user-attachments/assets/f0c77033-1ffc-4adc-8356-ef7a395cf937
 
 
+
+https://github.com/user-attachments/assets/3659d927-773e-4027-8fb7-dfcd0bbd45ff
+
+
+
+https://github.com/user-attachments/assets/3e11ce89-703e-47de-900c-71ed18cbb973
+
+
 ## Widgets de Base
 
 ### 1. Label (Texte)
