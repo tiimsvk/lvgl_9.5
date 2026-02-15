@@ -11,7 +11,7 @@ substitutions:
   # for Greek use "Noto Sans" for other languages use a compatible font family
   font_family: Figtree  
 
-  frigate: "http://192.168.1.38:8123/local/snapshots/last_snapshot.jpg"
+  frigate: 
   #frigate1: rtsp://Tapoone:Tapoone132@192.168.1.56:554/stream1
  
   media_player_entity: "media_player.waveshare_esp32_p4_media_player"
@@ -168,11 +168,11 @@ psram:
 # Enable Home Assistant API
 api:
   encryption:
-    key: "dkQIr4kVvP+E4XffuF9vSL5qQopmfgW6voYVkciZ3V8="
+    key: 
 
 ota:
   - platform: esphome
-    password: "490f749427bef8df98be01b4895c7058"
+    password: 
 
 wifi:
   ssid: !secret wifi_ssid
@@ -182,7 +182,7 @@ wifi:
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "Waveshare Fallback Hotspot"
-    password: "ONf0EKacM29P"
+    password: 
 
 captive_portal:
 
@@ -245,14 +245,14 @@ external_components:
   - source:
       type: git
       url: https://github.com/youkorr/lvgl_9.4
-      ref: claude/fix-lottie-reload-issue-ARogJ #claude/fix-lvgl-hidden-property-WQgoC #claude/fix-lvgl-hidden-property-JyQ89 #claude/fix-lottie-widget-z9ydW #claude/fix-lottie-crash-VcRU1 #claude/fix-lvgl-widgets-Ag1yK #claude/fix-lvgl-rendering-performance-xauVV
+      ref: main
     components: [lvgl, image]
     refresh: always   
 
   - source:
       type: git
       url: https://github.com/youkorr/test2_esp_video_esphome
-      ref: main #claude/optimize-face-detection-memory-0mKRM #claude/decouple-esp-video-Hr7PK
+      ref: main 
     components: [esp_video, esp_cam_sensor, sd_mmc_card, webdavbox3, storage, lvgl_camera_display, simple_video_player, network_camera, face_detection]
     refresh: always  
 
