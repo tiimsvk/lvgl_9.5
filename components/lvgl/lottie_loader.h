@@ -233,6 +233,12 @@ inline void lottie_free_resources(LottieContext *ctx) {
 // because it triggers ThorVG rendering which needs the 64 KB stack.
 // --------------------------------------------------------------------------
 inline bool lottie_launch(LottieContext *ctx) {
+    // Capture the widget's current HIDDEN flag BEFORE we force-hide.
+    // ESPHome's on_load fires at SCREEN_LOAD_START (before SCREEN_LOADED),
+    // so the user's script has already run and set the correct visibility.
+    // We save it here so the task can restore it after loading completes.
+    ctx->runtime_hidden = lv_obj_has_flag(ctx->obj, LV_OBJ_FLAG_HIDDEN);
+
     // Allocate pixel buffer in PSRAM
     size_t buf_bytes = (size_t)ctx->width * ctx->height * 4;
     ctx->pixel_buffer = (uint8_t *)heap_caps_malloc(
@@ -243,7 +249,7 @@ inline bool lottie_launch(LottieContext *ctx) {
     }
     memset(ctx->pixel_buffer, 0, buf_bytes);
 
-    // Hide temporarily during async load (user's config is already saved in ctx->user_wants_hidden)
+    // Hide temporarily during async load (pixel buffer is blank)
     lv_obj_add_flag(ctx->obj, LV_OBJ_FLAG_HIDDEN);
 
     // Allocate task stack + TCB
@@ -268,8 +274,11 @@ inline bool lottie_launch(LottieContext *ctx) {
         return false;
     }
 
-    ESP_LOGI(LOTTIE_TAG, "Lottie task launched (%u KB PSRAM stack)",
-             (unsigned)(LOTTIE_TASK_STACK_SIZE / 1024));
+    ESP_LOGI(LOTTIE_TAG, "Lottie launched (runtime_hidden=%d, PSRAM: %u KB buf + 64 KB stack, free PSRAM: %u KB, free SRAM: %u KB)",
+             (int)ctx->runtime_hidden,
+             (unsigned)(buf_bytes / 1024),
+             (unsigned)(heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024),
+             (unsigned)(heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024));
     return true;
 }
 
@@ -310,9 +319,11 @@ inline void lottie_screen_unloaded_cb(lv_event_t *e) {
     if (ctx->pixel_buffer)  { heap_caps_free(ctx->pixel_buffer);  ctx->pixel_buffer = nullptr; }
     ctx->stop_requested = false;
 
-    ESP_LOGI(LOTTIE_TAG, "Lottie PSRAM freed (%ux%u = %u KB + 64 KB stack)",
+    ESP_LOGI(LOTTIE_TAG, "Lottie FREED (%ux%u = %u KB buf + 64 KB stack) → free PSRAM: %u KB, free SRAM: %u KB",
              (unsigned)ctx->width, (unsigned)ctx->height,
-             (unsigned)(ctx->width * ctx->height * 4 / 1024));
+             (unsigned)(ctx->width * ctx->height * 4 / 1024),
+             (unsigned)(heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024),
+             (unsigned)(heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024));
 }
 
 inline void lottie_screen_loaded_cb(lv_event_t *e) {
