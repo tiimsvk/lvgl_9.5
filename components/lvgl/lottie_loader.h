@@ -49,7 +49,8 @@ struct LottieContext {
     volatile bool stop_requested;
     volatile bool restart_requested;  // ✅ Flag to restart animation from frame 0
     TickType_t start_tick;            // ✅ Animation start time (can be reset)
-    bool user_wants_hidden;     // Save user's 'hidden' config before forcing hide during load
+    bool user_wants_hidden;     // Save user's 'hidden' config from YAML
+    bool runtime_hidden;        // Actual visibility at time of unload (captures script changes)
 };
 
 // --------------------------------------------------------------------------
@@ -65,8 +66,10 @@ struct LottieContext {
 inline void lottie_load_task(void *param) {
     LottieContext *ctx = (LottieContext *)param;
 
-    // Wait for LVGL to be fully running
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    // Wait for LVGL to be ready.
+    // First load needs longer delay (LVGL may still be initialising).
+    // Re-load needs only a short delay (LVGL is already running).
+    vTaskDelay(pdMS_TO_TICKS(ctx->data_loaded ? 100 : 1000));
 
     lv_lock();
 
@@ -132,8 +135,10 @@ inline void lottie_load_task(void *param) {
         lv_lottie_set_buffer(ctx->obj, ctx->width, ctx->height, ctx->pixel_buffer);
     }
 
-    // Restore user's 'hidden' configuration (only show if user didn't set hidden: true)
-    if (!ctx->user_wants_hidden) {
+    // Restore visibility: use runtime_hidden which captures the actual state
+    // before page unload (preserves dynamic show/hide from user scripts).
+    // On first load, runtime_hidden == user_wants_hidden (from YAML config).
+    if (!ctx->runtime_hidden) {
         lv_obj_remove_flag(ctx->obj, LV_OBJ_FLAG_HIDDEN);
     }
 
@@ -279,6 +284,10 @@ inline bool lottie_launch(LottieContext *ctx) {
 inline void lottie_screen_unload_start_cb(lv_event_t *e) {
     LottieContext *ctx = (LottieContext *)lv_event_get_user_data(e);
 
+    // Capture actual visibility BEFORE hiding – this preserves dynamic
+    // show/hide from user scripts (e.g. weather widget selection).
+    ctx->runtime_hidden = lv_obj_has_flag(ctx->obj, LV_OBJ_FLAG_HIDDEN);
+
     // Stop the render task immediately
     ctx->stop_requested = true;
     if (ctx->task_handle) {
@@ -289,7 +298,7 @@ inline void lottie_screen_unload_start_cb(lv_event_t *e) {
     // Hide widget so LVGL won't try to draw the image during transition
     lv_obj_add_flag(ctx->obj, LV_OBJ_FLAG_HIDDEN);
 
-    ESP_LOGI(LOTTIE_TAG, "Lottie task stopped, widget hidden (transition starting)");
+    ESP_LOGI(LOTTIE_TAG, "Lottie task stopped, widget hidden (was_hidden=%d)", (int)ctx->runtime_hidden);
 }
 
 inline void lottie_screen_unloaded_cb(lv_event_t *e) {
@@ -346,6 +355,11 @@ inline bool lottie_init(lv_obj_t *obj, const void *data, size_t data_size,
     ctx->width     = width;
     ctx->height    = height;
     ctx->user_wants_hidden = user_wants_hidden;  // Save user's 'hidden' config from YAML
+    ctx->runtime_hidden = user_wants_hidden;    // Initially matches YAML config
+
+    // Store context on the LVGL object so user scripts can retrieve it
+    // via lv_obj_get_user_data() for lottie_restart() calls
+    lv_obj_set_user_data(obj, ctx);
 
     // Register screen events for PSRAM lifecycle (two-phase unload)
     lv_obj_t *screen = lv_obj_get_screen(obj);
