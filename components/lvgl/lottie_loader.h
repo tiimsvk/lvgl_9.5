@@ -47,6 +47,9 @@ struct LottieContext {
     StaticTask_t *task_tcb;     // internal RAM
     TaskHandle_t task_handle;
     volatile bool stop_requested;
+    volatile bool restart_requested;  // ✅ Flag to restart animation from frame 0
+    TickType_t start_tick;            // ✅ Animation start time (can be reset)
+    bool user_wants_hidden;     // Save user's 'hidden' config before forcing hide during load
 };
 
 // --------------------------------------------------------------------------
@@ -129,8 +132,10 @@ inline void lottie_load_task(void *param) {
         lv_lottie_set_buffer(ctx->obj, ctx->width, ctx->height, ctx->pixel_buffer);
     }
 
-    // Show widget
-    lv_obj_remove_flag(ctx->obj, LV_OBJ_FLAG_HIDDEN);
+    // Restore user's 'hidden' configuration (only show if user didn't set hidden: true)
+    if (!ctx->user_wants_hidden) {
+        lv_obj_remove_flag(ctx->obj, LV_OBJ_FLAG_HIDDEN);
+    }
 
     lv_unlock();
 
@@ -156,10 +161,17 @@ inline void lottie_load_task(void *param) {
     ESP_LOGI(LOTTIE_TAG, "Render loop: %u ms/frame, loop=%d",
              (unsigned)frame_delay_ms, (int)ctx->loop);
 
-    TickType_t start_tick = xTaskGetTickCount();
+    ctx->start_tick = xTaskGetTickCount();  // ✅ Store in context for restart capability
 
     while (!ctx->stop_requested) {
-        uint32_t elapsed_ms = (uint32_t)((xTaskGetTickCount() - start_tick) * portTICK_PERIOD_MS);
+        // ✅ Check if restart requested
+        if (ctx->restart_requested) {
+            ctx->start_tick = xTaskGetTickCount();
+            ctx->restart_requested = false;
+            ESP_LOGI(LOTTIE_TAG, "Animation restarted from frame 0");
+        }
+
+        uint32_t elapsed_ms = (uint32_t)((xTaskGetTickCount() - ctx->start_tick) * portTICK_PERIOD_MS);
 
         int32_t frame;
         if (ctx->loop) {
@@ -226,7 +238,7 @@ inline bool lottie_launch(LottieContext *ctx) {
     }
     memset(ctx->pixel_buffer, 0, buf_bytes);
 
-    // Hide until the task sets the buffer and loads data
+    // Hide temporarily during async load (user's config is already saved in ctx->user_wants_hidden)
     lv_obj_add_flag(ctx->obj, LV_OBJ_FLAG_HIDDEN);
 
     // Allocate task stack + TCB
@@ -302,13 +314,24 @@ inline void lottie_screen_loaded_cb(lv_event_t *e) {
 }
 
 // --------------------------------------------------------------------------
+// Public API: Restart animation from frame 0 (preserves loop/hidden state)
+// Safe to call at any time – sets a flag checked by the render loop.
+// --------------------------------------------------------------------------
+inline void lottie_restart(LottieContext *ctx) {
+    if (ctx && ctx->task_handle) {
+        ctx->restart_requested = true;
+        ESP_LOGI(LOTTIE_TAG, "Restart requested (will reset on next frame)");
+    }
+}
+
+// --------------------------------------------------------------------------
 // Public API: initialise Lottie widget – allocate buffer, register screen
 // events, and launch the load/render task.
 // Call under lv_lock (from LVGL init code).
 // --------------------------------------------------------------------------
 inline bool lottie_init(lv_obj_t *obj, const void *data, size_t data_size,
                          const char *file_path, uint32_t width, uint32_t height,
-                         bool loop, bool auto_start) {
+                         bool loop, bool auto_start, bool user_wants_hidden) {
     LottieContext *ctx = (LottieContext *)heap_caps_malloc(
         sizeof(LottieContext), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     if (!ctx) return false;
@@ -322,6 +345,7 @@ inline bool lottie_init(lv_obj_t *obj, const void *data, size_t data_size,
     ctx->auto_start = auto_start;
     ctx->width     = width;
     ctx->height    = height;
+    ctx->user_wants_hidden = user_wants_hidden;  // Save user's 'hidden' config from YAML
 
     // Register screen events for PSRAM lifecycle (two-phase unload)
     lv_obj_t *screen = lv_obj_get_screen(obj);
