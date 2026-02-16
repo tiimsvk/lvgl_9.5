@@ -8,7 +8,7 @@ from ..automation import action_to_code
 from ..defines import CONF_ITEMS, CONF_MAIN, call_lambda, literal
 from ..helpers import add_lv_use, lvgl_components_required
 from ..lv_validation import lv_int
-from ..lvcode import lv, lv_add
+from ..lvcode import LocalVariable, LvConditional, lv, lv_add
 from ..types import LvCompound, LvType, ObjUpdateAction
 from . import Widget, WidgetType, get_widgets
 
@@ -211,14 +211,34 @@ async def calendar_update_to_code(config, action_id, template_arg, args):
             year = await process_date_field(today.get(CONF_YEAR), 2024)
             month = await process_date_field(today.get(CONF_MONTH), 1)
             day = await process_date_field(today.get(CONF_DAY), 1)
-            lv.calendar_set_today_date(w.obj, year, month, day)
+            # Guard against invalid dates (e.g. SNTP not yet synced returns 0)
+            has_lambda = any(
+                isinstance(today.get(k), Lambda)
+                for k in (CONF_YEAR, CONF_MONTH, CONF_DAY)
+            )
+            if has_lambda:
+                with LocalVariable("_td_y", cg.int32, year) as y_var:
+                    with LvConditional(literal(f"{y_var} > 0")):
+                        lv.calendar_set_today_date(w.obj, y_var, month, day)
+            else:
+                lv.calendar_set_today_date(w.obj, year, month, day)
 
         # Update showed date
         # LVGL 9.4 API: lv_calendar_set_month_shown(obj, year, month) - no day param
         if showed := config.get(CONF_SHOWED_DATE):
             year = await process_date_field(showed.get(CONF_YEAR), 2024)
             month = await process_date_field(showed.get(CONF_MONTH), 1)
-            lv.calendar_set_month_shown(w.obj, year, month)
+            # Guard against invalid dates (e.g. SNTP not yet synced returns 0)
+            has_lambda = any(
+                isinstance(showed.get(k), Lambda)
+                for k in (CONF_YEAR, CONF_MONTH)
+            )
+            if has_lambda:
+                with LocalVariable("_sd_y", cg.int32, year) as y_var:
+                    with LvConditional(literal(f"{y_var} > 0")):
+                        lv.calendar_set_month_shown(w.obj, y_var, month)
+            else:
+                lv.calendar_set_month_shown(w.obj, year, month)
 
         # Update highlighted dates
         if highlighted := config.get(CONF_HIGHLIGHTED_DATES):
