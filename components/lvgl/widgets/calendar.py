@@ -18,7 +18,7 @@ CONF_SHOWED_DATE = "showed_date"
 CONF_HIGHLIGHTED_DATES = "highlighted_dates"
 CONF_MONTH = "month"
 CONF_DAY = "day"
-CONF_HEADER = "header"
+CONF_HEADER_MODE = "header_mode"
 CONF_DAY_NAMES = "day_names"
 
 # Header type constants matching LVGL documentation
@@ -84,7 +84,7 @@ CALENDAR_MODIFY_SCHEMA = cv.Schema(
 # Full schema for widget creation
 CALENDAR_SCHEMA = CALENDAR_MODIFY_SCHEMA.extend(
     {
-        cv.Optional(CONF_HEADER, default=HEADER_ARROW): cv.one_of(
+        cv.Optional(CONF_HEADER_MODE, default=HEADER_ARROW): cv.one_of(
             HEADER_ARROW, HEADER_DROPDOWN, HEADER_NONE, lower=True
         ),
         cv.Optional(CONF_DAY_NAMES): cv.All(
@@ -111,7 +111,7 @@ class CalendarType(WidgetType):
 
         # Add header for month navigation (per LVGL docs:
         # https://docs.lvgl.io/master/widgets/calendar.html)
-        header = config.get(CONF_HEADER, HEADER_ARROW)
+        header = config.get(CONF_HEADER_MODE, HEADER_ARROW)
         if header == HEADER_ARROW:
             add_lv_use("CALENDAR_HEADER_ARROW")
             lv.calendar_header_arrow_create(w.obj)
