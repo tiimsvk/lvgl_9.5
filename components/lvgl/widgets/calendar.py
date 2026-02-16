@@ -217,7 +217,7 @@ async def calendar_update_to_code(config, action_id, template_arg, args):
                 for k in (CONF_YEAR, CONF_MONTH, CONF_DAY)
             )
             if has_lambda:
-                with LocalVariable("_td_y", cg.int32, year) as y_var:
+                with LocalVariable("_td_y", cg.int32, year, modifier="") as y_var:
                     with LvConditional(literal(f"{y_var} > 0")):
                         lv.calendar_set_today_date(w.obj, y_var, month, day)
             else:
@@ -234,7 +234,7 @@ async def calendar_update_to_code(config, action_id, template_arg, args):
                 for k in (CONF_YEAR, CONF_MONTH)
             )
             if has_lambda:
-                with LocalVariable("_sd_y", cg.int32, year) as y_var:
+                with LocalVariable("_sd_y", cg.int32, year, modifier="") as y_var:
                     with LvConditional(literal(f"{y_var} > 0")):
                         lv.calendar_set_month_shown(w.obj, y_var, month)
             else:
