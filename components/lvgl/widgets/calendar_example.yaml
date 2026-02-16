@@ -16,8 +16,8 @@ lvgl:
             y: 10
             width: 300
             height: 300
-            # Header type: arrow (default), dropdown, or none
-            header: arrow
+            # Header mode: arrow (default), dropdown, or none
+            header_mode: arrow
             # Custom day name labels (7 strings, Mon-Sun)
             day_names: ["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"]
             today_date:
@@ -74,7 +74,7 @@ lvgl:
             y: 320
             width: 300
             height: 300
-            header: dropdown
+            header_mode: dropdown
             today_date:
               year: 2024
               month: 12
@@ -91,7 +91,7 @@ lvgl:
             y: 10
             width: 300
             height: 280
-            header: none
+            header_mode: none
             today_date:
               year: 2024
               month: 12

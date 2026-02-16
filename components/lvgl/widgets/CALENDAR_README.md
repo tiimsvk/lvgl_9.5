@@ -53,6 +53,7 @@ calendar:
   y: 10
   width: 300
   height: 300
+  header_mode: arrow  # arrow (default), dropdown, or none
   today_date:
     year: 2024
     month: 12
@@ -71,6 +72,8 @@ calendar:
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
+| `header_mode` | String | No | `arrow` | Header type: `arrow`, `dropdown`, or `none` |
+| `day_names` | List[String] | No | - | Custom day name labels (7 strings) |
 | `today_date` | Date | No | - | Sets today's date marker |
 | `showed_date` | Date | No | - | Initial month/year to display |
 | `highlighted_dates` | List[Date] | No | [] | Dates to highlight |
@@ -225,6 +228,7 @@ lvgl:
             id: holiday_calendar
             width: 320
             height: 300
+            header_mode: arrow
             today_date:
               year: 2024
               month: 12
