@@ -260,7 +260,7 @@ async def to_code(configs):
     # Enable advanced image decoders
     df.add_define("LV_USE_LIBPNG", "0")  # PNG support via pngdec (not libpng)
     df.add_define("LV_USE_BMP", "1")      # BMP support
-    df.add_define("LV_USE_GIF", "1")      # GIF support
+    df.add_define("LV_USE_GIF", "0")      # GIF support
     # Add pngdec library for PNG decoding (lightweight, no external deps)
     cg.add_library("pngdec", "1.0.1")
 
