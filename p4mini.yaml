@@ -5063,12 +5063,20 @@ key_collector:
                           start_angle: 135
                           end_angle: 45
                           adjustable: true
-                          bg_color: 0x2A2A3E
+                          bg_opa: TRANSP
+                          border_width: 0
+                          main:
+                            arc_color: 0x2A3048
+                            arc_width: 6
+                            arc_rounded: true
                           indicator:
-                            bg_color: 0x00BFA6
+                            arc_color: 0x00BFA6
+                            arc_width: 6
+                            arc_rounded: true
                           knob:
                             bg_color: 0x00E5C8
                             radius: 15
+                            pad_all: 8
                           on_value:
                             - lvgl.label.update:
                                 id: thermostat_target_temp
