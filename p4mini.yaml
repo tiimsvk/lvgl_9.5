@@ -4939,27 +4939,37 @@ key_collector:
                     id: thermostat_target_temp
                     text: !lambda 'return str_sprintf("%.0f%%", x);'
 
-          # Button - reproduction de lv_example_btn_1
+          # Button - reproduction de lv_example_button_2 (Styling buttons)
           - button:
               align: CENTER
               x: 150
-              y: -40
+              width: SIZE_CONTENT
+              height: SIZE_CONTENT
+              radius: 3
+              bg_color: 0x2196F3
+              bg_grad_color: 0x1565C0
+              bg_grad_dir: VER
+              bg_opa: COVER
+              border_width: 2
+              border_color: 0x9E9E9E
+              border_opa: 40%
+              shadow_width: 8
+              shadow_color: 0x9E9E9E
+              shadow_offset_y: 8
+              outline_color: 0x2196F3
+              outline_opa: COVER
+              pad_all: 10
+              pressed:
+                outline_width: 30
+                outline_opa: TRANSP
+                bg_color: 0x1565C0
+                bg_grad_color: 0x0D47A1
+                shadow_offset_y: 3
               on_click:
-                - logger.log: "Button clicked"
+                - logger.log: "Styled button clicked"
               widgets:
                 - label:
                     align: CENTER
                     text: "Button"
-
-          # Toggle button
-          - button:
-              id: test_toggle_btn
-              align: CENTER
-              x: 150
-              y: 40
-              checkable: true
-              widgets:
-                - label:
-                    align: CENTER
-                    text: "Toggle"
+                    text_color: 0xFFFFFF
 
