@@ -4914,180 +4914,27 @@ key_collector:
           - lambda: 'lv_indev_wait_release(lv_indev_get_act());'
           - lvgl.page.show: page_home
         widgets:
-          # Fond plein écran
-          - obj:
-              width: 800
-              height: 480
-              x: 0
-              y: 0
-              bg_color: 0x1A1A2E
-              bg_opa: COVER
-              border_width: 0
-              radius: 0
-              widgets:
+          # Label affichant la valeur
+          - label:
+              id: thermostat_target_temp
+              align: CENTER
+              text: "10%"
+              text_color: 0xFFFFFF
+              text_font: roboto_24
 
-                # Titre
-                - label:
-                    text: "Thermostat"
-                    align: TOP_MID
-                    y: 15
-                    text_color: 0xE0E0E0
-                    text_font: roboto_24
-
-                # Scale avec ticks colorés autour du cadran
-                - scale:
-                    id: thermostat_scale
-                    align: CENTER
-                    y: 20
-                    width: 340
-                    height: 340
-                    mode: ROUND_INNER
-                    min_value: 5
-                    max_value: 30
-                    rotation: 135
-                    angle_range: 270
-                    bg_opa: TRANSP
-                    border_width: 0
-                    scrollbar_mode: "off"
-                    main:
-                      arc_opa: TRANSP
-                      line_opa: TRANSP
-                    ticks:
-                      count: 26
-                      width: 1
-                      length: 8
-                      color: 0x3A4060
-                      major:
-                        stride: 5
-                        width: 2
-                        length: 14
-                        color: 0x8090AA
-                        label_show: false
-                    sections:
-                      # Bleu - zone froide (5° à 15°)
-                      - id: section_cold
-                        range_from: 5
-                        range_to: 15
-                        color: 0x42A5F5
-                        width: 2
-                        indicator:
-                          color: 0x42A5F5
-                          width: 2
-                        items:
-                          color: 0x42A5F5
-                          width: 1
-                      # Vert - zone confort (15° à 22°)
-                      - id: section_comfort
-                        range_from: 15
-                        range_to: 22
-                        color: 0x00BFA6
-                        width: 2
-                        indicator:
-                          color: 0x00BFA6
-                          width: 2
-                        items:
-                          color: 0x00BFA6
-                          width: 1
-                      # Orange - zone chaude (22° à 27°)
-                      - id: section_warm
-                        range_from: 22
-                        range_to: 27
-                        color: 0xFFA726
-                        width: 2
-                        indicator:
-                          color: 0xFFA726
-                          width: 2
-                        items:
-                          color: 0xFFA726
-                          width: 1
-                      # Rouge - zone très chaude (27° à 30°)
-                      - id: section_hot
-                        range_from: 27
-                        range_to: 30
-                        color: 0xEF5350
-                        width: 2
-                        indicator:
-                          color: 0xEF5350
-                          width: 2
-                        items:
-                          color: 0xEF5350
-                          width: 1
-
-                # Cercle extérieur glow (ombre colorée)
-                - obj:
-                    id: thermostat_glow_ring
-                    align: CENTER
-                    y: 20
-                    width: 310
-                    height: 310
-                    radius: 155
-                    bg_color: 0x16213E
-                    bg_opa: COVER
-                    border_width: 2
-                    border_color: 0x00BFA6
-                    border_opa: 40%
-                    shadow_width: 50
-                    shadow_color: 0x00BFA6
-                    shadow_opa: 50%
-                    shadow_spread: 8
-                    shadow_offset_x: 0
-                    shadow_offset_y: 0
-                    widgets:
-
-                      # Arc thermostat
-                      - arc:
-                          id: thermostat_arc
-                          align: CENTER
-                          width: 280
-                          height: 280
-                          min_value: 50
-                          max_value: 300
-                          value: 200
-                          start_angle: 135
-                          end_angle: 45
-                          adjustable: true
-                          bg_opa: TRANSP
-                          border_width: 0
-                          main:
-                            arc_color: 0x2A3048
-                            arc_width: 6
-                            arc_rounded: true
-                          indicator:
-                            arc_color: 0x00BFA6
-                            arc_width: 6
-                            arc_rounded: true
-                          knob:
-                            bg_color: 0x00E5C8
-                            radius: 15
-                            pad_all: 8
-                          on_value:
-                            - lvgl.label.update:
-                                id: thermostat_target_temp
-                                text: !lambda 'return str_sprintf("%.1f°", x / 10.0);'
-
-                      # Température cible (grande)
-                      - label:
-                          id: thermostat_target_temp
-                          align: CENTER
-                          y: -10
-                          text: "20.0°"
-                          text_color: 0x00BFA6
-                          text_font: roboto_48
-
-                      # Texte "consigne"
-                      - label:
-                          align: CENTER
-                          y: 30
-                          text: "Consigne"
-                          text_color: 0x666688
-                          text_font: roboto_14
-
-                      # Température actuelle
-                      - label:
-                          id: thermostat_current_temp
-                          align: CENTER
-                          y: 55
-                          text: "18.5°"
-                          text_color: 0x8888AA
-                          text_font: roboto_20
+          # Arc - reproduction de lv_example_arc_1
+          - arc:
+              id: thermostat_arc
+              align: CENTER
+              width: 150
+              height: 150
+              rotation: 135
+              start_angle: 0
+              end_angle: 270
+              value: 10
+              adjustable: true
+              on_value:
+                - lvgl.label.update:
+                    id: thermostat_target_temp
+                    text: !lambda 'return str_sprintf("%.0f%%", x);'
 
