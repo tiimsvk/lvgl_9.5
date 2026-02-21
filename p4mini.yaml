@@ -4983,6 +4983,12 @@ key_collector:
                           max_value: 30
                           rotation: 135
                           angle_range: 270
+                          bg_opa: TRANSP
+                          border_width: 0
+                          scrollbar_mode: "off"
+                          main:
+                            arc_opa: TRANSP
+                            line_opa: TRANSP
                           ticks:
                             count: 26
                             width: 1
