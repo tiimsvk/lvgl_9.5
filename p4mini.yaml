@@ -2678,6 +2678,33 @@ lvgl:
                 
 
 
+          # Bouton Thermostat
+          - button:
+              id: btn_thermostat
+              width: 150
+              height: 45
+              x: 170
+              y: 305
+              bg_color: 0x00BFA6
+              bg_opa: COVER
+              radius: 15
+              widgets:
+                - label:
+                    text: "CLIMATE"
+                    x: 40
+                    y: 8
+                    text_color: 0xFFFFFF
+                    text_font: roboto_18
+                    text_align: left
+                - label:
+                    text: "\U000F050F"
+                    text_align: left
+                    text_color: 0xFFFFFF
+                    text_font: mdi36
+              on_click:
+                then:
+                  - lvgl.page.show: thermostat_page
+
           # Bouton Media Player
           - button:
               id: btn_player
@@ -4879,3 +4906,97 @@ key_collector:
             - lvgl.widget.hide: alarm_panel_keypad_page
             - lvgl.widget.show: alarm_panel_state_bg
             - lvgl.widget.show: alarm_panel_state_control
+
+# ========== PAGE THERMOSTAT ==========
+      - id: thermostat_page
+        bg_color: 0x1A1A2E
+        on_swipe_up:
+          - lambda: 'lv_indev_wait_release(lv_indev_get_act());'
+          - lvgl.page.show: page_home
+        widgets:
+          # lv_example_arc_1 - Arc avec label qui suit l'indicateur
+          - label:
+              id: thermostat_target_temp
+              align: CENTER
+              text: "10%"
+              text_color: 0xFFFFFF
+              text_font: roboto_24
+
+          - arc:
+              id: thermostat_arc
+              align: CENTER
+              x: -150
+              width: 150
+              height: 150
+              rotation: 135
+              start_angle: 0
+              end_angle: 270
+              value: 10
+              adjustable: true
+              rotate_label:
+                id: thermostat_target_temp
+                offset: 25
+              on_value:
+                - lvgl.label.update:
+                    id: thermostat_target_temp
+                    text: !lambda 'return str_sprintf("%.0f%%", x);'
+
+          # Button - reproduction de lv_example_button_2 (Styling buttons)
+          - button:
+              align: CENTER
+              x: 150
+              width: SIZE_CONTENT
+              height: SIZE_CONTENT
+              radius: 3
+              bg_color: 0x2196F3
+              bg_grad_color: 0x1565C0
+              bg_grad_dir: VER
+              bg_opa: COVER
+              border_width: 2
+              border_color: 0x9E9E9E
+              border_opa: 40%
+              shadow_width: 8
+              shadow_color: 0x9E9E9E
+              shadow_offset_y: 8
+              outline_color: 0x2196F3
+              outline_opa: COVER
+              pad_all: 10
+              pressed:
+                outline_width: 30
+                outline_opa: TRANSP
+                translate_y: 5
+                shadow_offset_y: 3
+                bg_color: 0x1565C0
+                bg_grad_color: 0x0D47A1
+                # Transition on pressed state (linear 300ms like LVGL example)
+                style_transition_time: 300ms
+                style_transition_path: linear
+              on_click:
+                - logger.log: "Styled button clicked"
+              widgets:
+                - label:
+                    align: CENTER
+                    text: "Button"
+                    text_color: 0xFFFFFF
+
+          # Button - reproduction de lv_example_button_3 (Gummy button)
+          - button:
+              align: CENTER
+              x: 150
+              y: 80
+              # Transition for release (overshoot = bounce-back effect)
+              style_transition_time: 250ms
+              style_transition_delay: 100ms
+              style_transition_path: overshoot
+              pressed:
+                transform_width: 10
+                transform_height: -10
+                text_letter_space: 10
+                # Transition for press
+                style_transition_time: 250ms
+                style_transition_path: ease_in_out
+              widgets:
+                - label:
+                    align: CENTER
+                    text: "Gum"
+

@@ -547,13 +547,13 @@ lvgl:
                   arc_color: 0x1a1a2e
                   arc_width: 15
 
-            # Value display
+            # Value display (recolor enabled for inline color codes)
             - label:
                 id: gauge_value_label
                 align: CENTER
                 y: 30
-                text: "0"
-                text_color: 0x00BFFF
+                text: "#00BFFF 0#"
+                recolor: true
                 text_font: montserrat_28
 
 # Animation for the gauge
@@ -575,12 +575,15 @@ interval:
             if (v >= 100) d = -1;
             if (v <= 0) d = 1;
             return v;
-          animated: true
       - lvgl.label.update:
           id: gauge_value_label
           text:
-            format: "%d"
-            args: ['id(gauge_arc).get_value()']
+            format: "%s%d#"
+            args:
+              - |-
+                id(gauge_arc).get_value() < 30 ? "#00FF00 " :
+                id(gauge_arc).get_value() < 70 ? "#FFFF00 " : "#FF0000 "
+              - 'id(gauge_arc).get_value()'
 
 # =============================================================================
 # TROUBLESHOOTING

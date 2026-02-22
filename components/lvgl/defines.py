@@ -376,6 +376,7 @@ STATES = (
     "pressed",
     "scrolled",
     "disabled",
+    "alt",  # LVGL 9.5: LV_STATE_ALT for dark/light mode switching
     "user_1",
     "user_2",
     "user_3",
@@ -476,6 +477,7 @@ OBJ_FLAGS = (
     "layout_1",
     "layout_2",
     "send_draw_task_events",
+    "radio_button",  # LVGL 9.5: LV_OBJ_FLAG_RADIO_BUTTON for radio group behavior
     "widget_1",
     "widget_2",
     "user_1",
@@ -541,6 +543,7 @@ LV_CHART_TYPES = (
     "LINE",
     "BAR",
     "SCATTER",
+    "CURVE",  # LVGL 9.5: Bézier curved charts (requires Vector Graphics/ThorVG)
 )
 LV_CHART_AXES = (
     "PRIMARY_Y",
@@ -694,6 +697,21 @@ CONF_VISIBLE_ROW_COUNT = "visible_row_count"
 CONF_WIDGET = "widget"
 CONF_WIDGETS = "widgets"
 CONF_ZOOM = "zoom"
+
+# Transition properties for animated state changes
+CONF_STYLE_TRANSITION_TIME = "style_transition_time"
+CONF_STYLE_TRANSITION_DELAY = "style_transition_delay"
+CONF_STYLE_TRANSITION_PATH = "style_transition_path"
+
+ANIM_PATHS = {
+    "linear": "lv_anim_path_linear",
+    "ease_in": "lv_anim_path_ease_in",
+    "ease_out": "lv_anim_path_ease_out",
+    "ease_in_out": "lv_anim_path_ease_in_out",
+    "overshoot": "lv_anim_path_overshoot",
+    "bounce": "lv_anim_path_bounce",
+    "step": "lv_anim_path_step",
+}
 
 # Keypad keys
 
