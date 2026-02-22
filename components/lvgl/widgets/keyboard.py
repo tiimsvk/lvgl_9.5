@@ -1,10 +1,12 @@
 from esphome.components.key_provider import KeyProvider
 import esphome.config_validation as cv
 from esphome.const import CONF_ITEMS, CONF_MODE
+from esphome.cpp_generator import MockObj
 from esphome.cpp_types import std_string
 
 from ..defines import CONF_MAIN, KEYBOARD_MODES, literal
 from ..helpers import add_lv_use, lvgl_components_required
+from ..lvcode import lv
 from ..types import LvCompound, LvType
 from . import Widget, WidgetType, get_widgets
 from .textarea import CONF_TEXTAREA, lv_textarea_t
@@ -42,6 +44,14 @@ class KeyboardType(WidgetType):
 
     def get_uses(self):
         return CONF_KEYBOARD, CONF_TEXTAREA
+
+    async def on_create(self, var: MockObj, config: dict):
+        # lv_keyboard_create() internally sets LV_ALIGN_BOTTOM_MID alignment and
+        # size to LV_PCT(100) x LV_PCT(50). Reset alignment to DEFAULT so that
+        # explicit x/y positioning works as absolute coordinates rather than
+        # offsets from bottom-center. If the user specifies align: in their config,
+        # set_obj_properties() will override this reset.
+        lv.call("obj_set_align", var, literal("LV_ALIGN_DEFAULT"))
 
     async def to_code(self, w: Widget, config: dict):
         lvgl_components_required.add("KEY_LISTENER")
