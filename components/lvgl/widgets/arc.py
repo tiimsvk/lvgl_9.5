@@ -21,6 +21,7 @@ from ..defines import (
     CONF_START_ANGLE,
     LV_OBJ_FLAG,
     LV_PART,
+    LValidator,
 )
 from ..lv_validation import (
     get_start_value,
@@ -89,8 +90,14 @@ class ArcType(NumberType):
                 # start_angle and end_angle are mapped to bg_start_angle and bg_end_angle
                 prop = str(prop)
                 if prop.endswith("_angle"):
-                    prop = "bg_" + prop
-                await w.set_property(prop, config, processor=validator)
+                    # Extract value using original config key before renaming
+                    value = config.get(prop)
+                    if value is not None:
+                        if isinstance(validator, LValidator):
+                            value = await validator.process(value)
+                        await w.set_property("bg_" + prop, value)
+                else:
+                    await w.set_property(prop, config, processor=validator)
         if CONF_ADJUSTABLE in config:
             if not config[CONF_ADJUSTABLE]:
                 lv_obj.remove_style(w.obj, nullptr, LV_PART.KNOB)
