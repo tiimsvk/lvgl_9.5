@@ -4914,7 +4914,7 @@ key_collector:
           - lambda: 'lv_indev_wait_release(lv_indev_get_act());'
           - lvgl.page.show: page_home
         widgets:
-          # Label affichant la valeur
+          # lv_example_arc_1 - Arc avec label qui suit l'indicateur
           - label:
               id: thermostat_target_temp
               align: CENTER
@@ -4922,7 +4922,6 @@ key_collector:
               text_color: 0xFFFFFF
               text_font: roboto_24
 
-          # Arc - reproduction de lv_example_arc_1
           - arc:
               id: thermostat_arc
               align: CENTER
@@ -4934,6 +4933,9 @@ key_collector:
               end_angle: 270
               value: 10
               adjustable: true
+              rotate_label:
+                id: thermostat_target_temp
+                offset: 25
               on_value:
                 - lvgl.label.update:
                     id: thermostat_target_temp
