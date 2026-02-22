@@ -575,7 +575,6 @@ interval:
             if (v >= 100) d = -1;
             if (v <= 0) d = 1;
             return v;
-          animated: true
       - lvgl.label.update:
           id: gauge_value_label
           text:
