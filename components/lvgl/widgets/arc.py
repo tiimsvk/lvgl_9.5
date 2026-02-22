@@ -1,6 +1,7 @@
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_GROUP,
+    CONF_ID,
     CONF_MAX_VALUE,
     CONF_MIN_VALUE,
     CONF_MODE,
@@ -28,11 +29,21 @@ from ..lv_validation import (
     lv_int,
     lv_positive_int,
 )
-from ..lvcode import lv, lv_expr, lv_obj
-from ..types import LvNumber
-from . import NumberType, Widget
+from ..lvcode import EVENT_ARG, LambdaContext, lv, lv_add, lv_expr, lv_obj, lvgl_static
+from ..types import LV_EVENT, LvNumber, lv_obj_t
+from . import NumberType, Widget, get_widget_
 
 CONF_ARC = "arc"
+CONF_ROTATE_LABEL = "rotate_label"
+CONF_OFFSET = "offset"
+
+ROTATE_LABEL_SCHEMA = cv.Schema(
+    {
+        cv.Required(CONF_ID): cv.use_id(lv_obj_t),
+        cv.Optional(CONF_OFFSET, default=25): cv.positive_int,
+    }
+)
+
 ARC_SCHEMA = cv.Schema(
     {
         cv.Optional(CONF_VALUE): lv_float,
@@ -44,6 +55,7 @@ ARC_SCHEMA = cv.Schema(
         cv.Optional(CONF_ADJUSTABLE, default=False): bool,
         cv.Optional(CONF_MODE, default="NORMAL"): ARC_MODES.one_of,
         cv.Optional(CONF_CHANGE_RATE, default=720): lv_positive_int,
+        cv.Optional(CONF_ROTATE_LABEL): ROTATE_LABEL_SCHEMA,
     }
 )
 
@@ -88,6 +100,22 @@ class ArcType(NumberType):
                 lv.group_add_obj(lv_expr.group_get_default(), w.obj)
 
         await w.set_property(CONF_VALUE, await get_start_value(config))
+
+        # Handle rotate_label: rotate a label to follow the arc indicator position
+        if CONF_ROTATE_LABEL in config:
+            rotate_config = config[CONF_ROTATE_LABEL]
+            label_w = await get_widget_(rotate_config[CONF_ID])
+            offset = rotate_config[CONF_OFFSET]
+            # Initial rotation to position label at current arc value
+            lv.arc_rotate_obj_to_angle(w.obj, label_w.obj, offset)
+            # Register VALUE_CHANGED callback for ongoing rotation
+            async with LambdaContext(EVENT_ARG, where=config[CONF_ID]) as context:
+                lv.arc_rotate_obj_to_angle(w.obj, label_w.obj, offset)
+            lv_add(
+                lvgl_static.add_event_cb(
+                    w.obj, await context.get_lambda(), LV_EVENT.VALUE_CHANGED
+                )
+            )
 
 
 arc_spec = ArcType()

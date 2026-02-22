@@ -568,7 +568,16 @@ async def set_obj_properties(w: Widget, config):
         for _state_name, _state_props in states.items():
             for prop in _state_props:
                 if prop in ALL_STYLES:
-                    all_part_style_props.add(remap_property(prop))
+                    remapped = remap_property(prop)
+                    # pad_all is a convenience setter (lv_obj_set_style_pad_all)
+                    # but LV_STYLE_PAD_ALL doesn't exist as an enum in LVGL 9.x.
+                    # Expand it into the four individual padding properties.
+                    if remapped == "pad_all":
+                        all_part_style_props.update(
+                            ("pad_top", "pad_bottom", "pad_left", "pad_right")
+                        )
+                    else:
+                        all_part_style_props.add(remapped)
 
         part = "LV_PART_" + part.upper()
         for state, props in states.items():
