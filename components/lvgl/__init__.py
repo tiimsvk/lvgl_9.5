@@ -238,24 +238,24 @@ async def to_code(configs):
     # THORVG + SVG/LOTTIE SUPPORT (LVGL v9.5+)
     # ============================================
     # Enable floating point support (required by matrix)
-    df.add_define("LV_USE_FLOAT", "1")
+    #df.add_define("LV_USE_FLOAT", "1")
     # Enable matrix support (required by vector graphics)
-    df.add_define("LV_USE_MATRIX", "1")
+    #df.add_define("LV_USE_MATRIX", "1")
     # Enable vector graphics support (required for SVG/Lottie)
-    df.add_define("LV_USE_VECTOR_GRAPHIC", "1")
+    #df.add_define("LV_USE_VECTOR_GRAPHIC", "1")
     # Enable ThorVG vector graphics engine (built-in to LVGL v9)
-    df.add_define("LV_USE_THORVG_INTERNAL", "1")
+    #df.add_define("LV_USE_THORVG_INTERNAL", "1")
     # ThorVG optimizations for ESP32
-    df.add_define("LV_VG_LITE_THORVG_16PIXELS_ALIGN", "1")  # Optimize for 16-pixel alignment
+    #df.add_define("LV_VG_LITE_THORVG_16PIXELS_ALIGN", "1")  # Optimize for 16-pixel alignment
     # Enable FreeRTOS threading for LVGL draw operations
     # Note: atomic.h shim added in components/lvgl/ for ESP-IDF compatibility
-    df.add_define("LV_USE_OS", "LV_OS_FREERTOS")
+    #df.add_define("LV_USE_OS", "LV_OS_FREERTOS")
     # Draw thread stack size - 48KB for ThorVG rendering
-    df.add_define("LV_DRAW_THREAD_STACK_SIZE", "(48 * 1024)")
+    #df.add_define("LV_DRAW_THREAD_STACK_SIZE", "(48 * 1024)")
     # Enable SVG support (requires ThorVG)
-    df.add_define("LV_USE_SVG", "1")
+    #df.add_define("LV_USE_SVG", "1")
     # Enable Lottie animation support (requires ThorVG)
-    df.add_define("LV_USE_LOTTIE", "1")
+    #df.add_define("LV_USE_LOTTIE", "1")
     # Enable advanced image decoders
     df.add_define("LV_USE_LIBPNG", "0")  # PNG support via pngdec (not libpng)
     df.add_define("LV_USE_BMP", "1")      # BMP support
