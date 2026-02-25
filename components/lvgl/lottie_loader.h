@@ -1,5 +1,9 @@
 #pragma once
 
+#if !defined(LV_USE_LOTTIE) || LV_USE_LOTTIE == 0
+// Lottie disabled - provide empty stubs
+#else
+
 #ifdef USE_ESP32
 
 #include "freertos/FreeRTOS.h"
@@ -397,7 +401,7 @@ inline bool lottie_init(lv_obj_t *obj, const void *data, size_t data_size,
 
 #endif  // USE_ESP32
 
-
+#endif
 
 
 
