@@ -1,5 +1,9 @@
 #pragma once
 
+#if !defined(LV_USE_SVG) || LV_USE_SVG == 0
+// SVG disabled - provide empty stubs
+#else
+
 #ifdef USE_ESP32
 
 #include "freertos/FreeRTOS.h"
@@ -329,3 +333,4 @@ inline bool svg_setup_and_render_file(lv_obj_t *canvas_obj,
 }  // namespace esphome
 
 #endif  // USE_ESP32
+#endif
