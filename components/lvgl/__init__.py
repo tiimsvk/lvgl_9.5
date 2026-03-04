@@ -213,7 +213,7 @@ async def to_code(configs):
 
     # Define ESPHOME_ENTITY_BUTTON_COUNT for ESPHome core compatibility
     # This is required by application.h even when not using button entities
-    cg.add_define("ESPHOME_ENTITY_BUTTON_COUNT", 0)
+    #cg.add_define("ESPHOME_ENTITY_BUTTON_COUNT", 0)
 
     # suppress default enabling of extra widgets
     df.add_define("_LV_KCONFIG_PRESENT")
