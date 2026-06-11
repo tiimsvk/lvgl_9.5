@@ -2,19 +2,19 @@ from esphome import automation
 import esphome.config_validation as cv
 from esphome.const import CONF_DURATION, CONF_ID
 
-from ..automation import action_to_code
+from ..automation import action_to_code, disp_update
 from ..defines import CONF_AUTO_START, CONF_MAIN, CONF_REPEAT_COUNT, CONF_SRC
 from ..helpers import lvgl_components_required
 from ..lv_validation import lv_image_list, lv_milliseconds
-from ..lvcode import lv, lv_add
-from ..types import LvType, ObjUpdateAction, LvglAction
+from ..lvcode import lv
+from ..types import LvType, ObjUpdateAction
 from . import Widget, WidgetType, get_widgets
 from .img import CONF_IMAGE
 from .label import CONF_LABEL
 
 CONF_ANIMIMG = "animimg"
 CONF_ON_ANIM_START = "on_anim_start"
-CONF_ON_ANIM_END = "on_anim_end"
+CONF_ON_ANIM_READY = "on_anim_ready"
 
 
 def lv_repeat_count(value):
@@ -34,7 +34,7 @@ ANIMIMG_SCHEMA = ANIMIMG_BASE_SCHEMA.extend(
         cv.Required(CONF_DURATION): lv_milliseconds,
         cv.Required(CONF_SRC): lv_image_list,
         cv.Optional(CONF_ON_ANIM_START): automation.validate_automation(),
-        cv.Optional(CONF_ON_ANIM_END): automation.validate_automation(),
+        cv.Optional(CONF_ON_ANIM_READY): automation.validate_automation(),
     }
 )
 
@@ -69,11 +69,19 @@ class AnimimgType(WidgetType):
         if duration := config.get(CONF_DURATION):
             lv.animimg_set_duration(w.obj, duration)
         
-        # Register event callbacks
+        # Register event callbacks using the automation system
         if on_anim_start := config.get(CONF_ON_ANIM_START):
-            await w.add_event_cb(on_anim_start, "LV_EVENT_READY", "LV_EVENT_ANIM_START")
-        if on_anim_end := config.get(CONF_ON_ANIM_END):
-            await w.add_event_cb(on_anim_end, "LV_EVENT_READY", "LV_EVENT_ANIM_END")
+            await disp_update(
+                on_anim_start,
+                w.obj,
+                "LV_EVENT_ANIM_START",
+            )
+        if on_anim_ready := config.get(CONF_ON_ANIM_READY):
+            await disp_update(
+                on_anim_ready,
+                w.obj,
+                "LV_EVENT_READY",
+            )
         
         if config[CONF_AUTO_START]:
             lv.animimg_start(w.obj)
