@@ -6,11 +6,12 @@ from ..automation import action_to_code
 from ..defines import CONF_AUTO_START, CONF_MAIN, CONF_REPEAT_COUNT, CONF_SRC
 from ..helpers import lvgl_components_required
 from ..lv_validation import lv_image_list, lv_milliseconds
-from ..lvcode import lv, EVENT_ARG, LambdaContext, lv_add, lvgl_static, literal
+from ..lvcode import lv, EVENT_ARG, LambdaContext, lv_add, lvgl_static, literal, lv_event_t_ptr
 from ..types import LvType, ObjUpdateAction
 from . import Widget, WidgetType, get_widgets
 from .img import CONF_IMAGE
 from .label import CONF_LABEL
+import esphome.codegen as cg
 
 CONF_ANIMIMG = "animimg"
 CONF_ON_ANIM_START = "on_anim_start"
@@ -82,13 +83,10 @@ class AnimimgType(WidgetType):
 
     async def _add_animimg_event(self, w: Widget, conf, event_code):
         """Add event callback for animimg widget"""
-        from esphome import automation as auto
-        from ..lvcode import lv_event_t_ptr, LvConditional
-        
         tid = conf[CONF_TRIGGER_ID]
-        trigger = auto.cg.new_Pvariable(tid)
+        trigger = cg.new_Pvariable(tid)
         args = [(w.type.w_type.operator("ptr"), "obj"), (lv_event_t_ptr, "event")]
-        await auto.build_automation(trigger, args, conf)
+        await automation.build_automation(trigger, args, conf)
         
         async with LambdaContext(EVENT_ARG, where=tid) as context:
             lv_add(trigger.trigger(w.obj, literal("event")))
