@@ -289,6 +289,8 @@ LV_EVENT_MAP = {
     "REFRESH": "REFRESH",
     "READY": "READY",
     "CANCEL": "CANCEL",
+    "ANIM_START": "ANIM_START",
+    "ANIM_READY": "READY",  # LVGL animimg používa READY event pre koniec 
     # Other events
     "CREATE": "CREATE",
     "DELETE": "DELETE",
