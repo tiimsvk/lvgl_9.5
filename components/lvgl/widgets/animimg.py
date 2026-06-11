@@ -6,8 +6,8 @@ from ..automation import action_to_code
 from ..defines import CONF_AUTO_START, CONF_MAIN, CONF_REPEAT_COUNT, CONF_SRC
 from ..helpers import lvgl_components_required
 from ..lv_validation import lv_image_list, lv_milliseconds
-from ..lvcode import lv
-from ..types import LvType, ObjUpdateAction
+from ..lvcode import lv, lv_add
+from ..types import LvType, ObjUpdateAction, LvglAction
 from . import Widget, WidgetType, get_widgets
 from .img import CONF_IMAGE
 from .label import CONF_LABEL
@@ -68,6 +68,13 @@ class AnimimgType(WidgetType):
             lv.animimg_set_repeat_count(w.obj, repeat_count)
         if duration := config.get(CONF_DURATION):
             lv.animimg_set_duration(w.obj, duration)
+        
+        # Register event callbacks
+        if on_anim_start := config.get(CONF_ON_ANIM_START):
+            await w.add_event_cb(on_anim_start, "LV_EVENT_READY", "LV_EVENT_ANIM_START")
+        if on_anim_end := config.get(CONF_ON_ANIM_END):
+            await w.add_event_cb(on_anim_end, "LV_EVENT_READY", "LV_EVENT_ANIM_END")
+        
         if config[CONF_AUTO_START]:
             lv.animimg_start(w.obj)
 
