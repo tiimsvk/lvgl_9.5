@@ -1,6 +1,6 @@
 from esphome import automation
 import esphome.config_validation as cv
-from esphome.const import CONF_DURATION, CONF_ID
+from esphome.const import CONF_DURATION, CONF_ID, CONF_TRIGGER_ID
 
 from ..automation import action_to_code
 from ..defines import CONF_AUTO_START, CONF_MAIN, CONF_REPEAT_COUNT, CONF_SRC
@@ -33,8 +33,17 @@ ANIMIMG_SCHEMA = ANIMIMG_BASE_SCHEMA.extend(
     {
         cv.Required(CONF_DURATION): lv_milliseconds,
         cv.Required(CONF_SRC): lv_image_list,
-        cv.Optional(CONF_ON_ANIM_START): automation.validate_automation(),
-        cv.Optional(CONF_ON_ANIM_READY): automation.validate_automation(),
+        # Použiť validate_automation s explicitným Trigger typom
+        cv.Optional(CONF_ON_ANIM_START): automation.validate_automation(
+            {
+                cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(automation.Trigger.template()),
+            }
+        ),
+        cv.Optional(CONF_ON_ANIM_READY): automation.validate_automation(
+            {
+                cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(automation.Trigger.template()),
+            }
+        ),
     }
 )
 
