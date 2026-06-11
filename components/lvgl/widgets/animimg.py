@@ -1,17 +1,16 @@
 from esphome import automation
 import esphome.config_validation as cv
-from esphome.const import CONF_DURATION, CONF_ID, CONF_TRIGGER_ID
+from esphome.const import CONF_DURATION, CONF_ID
 
 from ..automation import action_to_code
 from ..defines import CONF_AUTO_START, CONF_MAIN, CONF_REPEAT_COUNT, CONF_SRC
 from ..helpers import lvgl_components_required
 from ..lv_validation import lv_image_list, lv_milliseconds
-from ..lvcode import lv, EVENT_ARG, LambdaContext, lv_add, lvgl_static, literal, lv_event_t_ptr
+from ..lvcode import lv
 from ..types import LvType, ObjUpdateAction
 from . import Widget, WidgetType, get_widgets
 from .img import CONF_IMAGE
 from .label import CONF_LABEL
-import esphome.codegen as cg
 
 CONF_ANIMIMG = "animimg"
 CONF_ON_ANIM_START = "on_anim_start"
@@ -69,28 +68,8 @@ class AnimimgType(WidgetType):
             lv.animimg_set_repeat_count(w.obj, repeat_count)
         if duration := config.get(CONF_DURATION):
             lv.animimg_set_duration(w.obj, duration)
-        
-        # Register custom event callbacks manually
-        for event_name, event_code in [
-            (CONF_ON_ANIM_START, "LV_EVENT_ANIM_START"),
-            (CONF_ON_ANIM_READY, "LV_EVENT_READY"),
-        ]:
-            if event_conf := config.get(event_name):
-                await self._add_animimg_event(w, event_conf[0], event_code)
-        
         if config[CONF_AUTO_START]:
             lv.animimg_start(w.obj)
-
-    async def _add_animimg_event(self, w: Widget, conf, event_code):
-        """Add event callback for animimg widget"""
-        tid = conf[CONF_TRIGGER_ID]
-        trigger = cg.new_Pvariable(tid)
-        args = [(w.type.w_type.operator("ptr"), "obj"), (lv_event_t_ptr, "event")]
-        await automation.build_automation(trigger, args, conf)
-        
-        async with LambdaContext(EVENT_ARG, where=tid) as context:
-            lv_add(trigger.trigger(w.obj, literal("event")))
-        lv_add(lvgl_static.add_event_cb(w.obj, await context.get_lambda(), literal(event_code)))
 
     def get_uses(self):
         return "img", CONF_IMAGE, CONF_LABEL
