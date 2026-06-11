@@ -57,7 +57,9 @@ async def generate_triggers():
                 if event in LV_EVENT_TRIGGERS
             }.items():
                 conf = conf[0]
-                w.add_flag("LV_OBJ_FLAG_CLICKABLE")
+                # Nepridávať CLICKABLE flag pre animimg eventy
+                if event not in ("on_anim_start", "on_anim_ready"):
+                    w.add_flag("LV_OBJ_FLAG_CLICKABLE")
                 event = literal("LV_EVENT_" + LV_EVENT_MAP[event[3:].upper()])
                 await add_trigger(conf, w, event)
 
