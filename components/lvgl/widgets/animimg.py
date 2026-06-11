@@ -13,6 +13,8 @@ from .img import CONF_IMAGE
 from .label import CONF_LABEL
 
 CONF_ANIMIMG = "animimg"
+CONF_ON_ANIM_START = "on_anim_start"
+CONF_ON_ANIM_END = "on_anim_end"
 
 
 def lv_repeat_count(value):
@@ -31,6 +33,8 @@ ANIMIMG_SCHEMA = ANIMIMG_BASE_SCHEMA.extend(
     {
         cv.Required(CONF_DURATION): lv_milliseconds,
         cv.Required(CONF_SRC): lv_image_list,
+        cv.Optional(CONF_ON_ANIM_START): automation.validate_automation(),
+        cv.Optional(CONF_ON_ANIM_END): automation.validate_automation(),
     }
 )
 
