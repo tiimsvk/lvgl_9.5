@@ -37,7 +37,7 @@ static int32_t ppa_delete(lv_draw_unit_t * draw_unit);
  *   GLOBAL FUNCTIONS
  **********************/
 
-void lv_draw_ppa_init(void)
+static inline void lv_draw_ppa_init(void)
 {
     lv_draw_ppa_unit_t * draw_ppa_unit = (lv_draw_ppa_unit_t *)lv_draw_create_unit(sizeof(lv_draw_ppa_unit_t));
     draw_ppa_unit->base_unit.evaluate_cb = ppa_evaluate;
@@ -84,7 +84,7 @@ void lv_draw_ppa_init(void)
     }
 }
 
-void lv_draw_ppa_deinit(void)
+static inline void lv_draw_ppa_deinit(void)
 {
 }
 
