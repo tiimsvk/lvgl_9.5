@@ -11,7 +11,7 @@
 #include "lv_draw_ppa_private.h"
 #include "lv_draw_ppa.h"
 
-void lv_draw_ppa_fill(lv_draw_task_t * t, const lv_draw_fill_dsc_t * dsc,
+static inline void lv_draw_ppa_fill(lv_draw_task_t * t, const lv_draw_fill_dsc_t * dsc,
                       const lv_area_t * coords)
 {
     lv_draw_ppa_unit_t * u = (lv_draw_ppa_unit_t *)t->draw_unit;
