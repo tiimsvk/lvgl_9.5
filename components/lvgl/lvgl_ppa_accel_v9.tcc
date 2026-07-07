@@ -425,7 +425,7 @@ static void lv_draw_ppa_v9_handler(lv_draw_task_t *t, const lv_draw_sw_blend_dsc
     lv_draw_ppa_v9_sw_fallback(t, dsc);
 }
 
-void lvgl_port_ppa_v9_init(lv_display_t *display)
+static inline void lvgl_port_ppa_v9_init(lv_display_t *display)
 {
     if (!display || lv_display_get_color_format(display) != LV_COLOR_FORMAT_RGB565) {
         ESP_LOGI(TAG_V9, "skip: display not RGB565");
