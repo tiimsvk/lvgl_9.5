@@ -1,6 +1,6 @@
 # ESPHome LVGL Scale Widget Examples
 # =============================================================================
-# LVGL v9.4 Scale Widget - Complete Examples
+# LVGL v9.5 Scale Widget - Complete Examples
 # Covers all 12 examples from the LVGL documentation:
 # https://docs.lvgl.io/master/widgets/scale.html
 #
@@ -12,7 +12,7 @@
 #   - VERTICAL_LEFT: Vertical with ticks on left
 #   - VERTICAL_RIGHT: Vertical with ticks on right
 #
-# New Features (v9.4 complete):
+# New Features (v9.5 complete):
 #   - Needles: line and image needles (lv_scale_set_line_needle_value)
 #   - text_src: custom label text (lv_scale_set_text_src)
 #   - Section multi-part styling: MAIN, INDICATOR, ITEMS per section

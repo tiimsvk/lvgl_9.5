@@ -1,7 +1,7 @@
 """
-LVGL 9.4 Lottie Animation Widget for ESPHome
+LVGL 9.5 Lottie Animation Widget for ESPHome
 
-This module implements the Lottie animation widget for LVGL 9.4.
+This module implements the Lottie animation widget for LVGL 9.5.
 
 Lottie is a library for parsing Adobe After Effects animations exported as JSON
 using the Bodymovin plugin and rendering them natively.

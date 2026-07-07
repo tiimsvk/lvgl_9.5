@@ -1,5 +1,5 @@
 """
-LVGL v9.4 Image Button Widget Implementation
+LVGL v9.5 Image Button Widget Implementation
 
 The image button widget is a button that displays images for different states
 (released, pressed, disabled, checked).

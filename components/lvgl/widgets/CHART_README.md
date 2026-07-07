@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation provides full support for the LVGL v9.4 Chart widget (`lv_chart`) in ESPHome. The chart widget displays data visualizations including line charts, bar charts, and scatter plots with support for multiple data series.
+This implementation provides full support for the LVGL v9.5 Chart widget (`lv_chart`) in ESPHome. The chart widget displays data visualizations including line charts, bar charts, and scatter plots with support for multiple data series.
 
 ## Features
 

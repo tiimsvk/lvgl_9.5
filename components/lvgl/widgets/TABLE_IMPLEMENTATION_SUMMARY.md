@@ -13,9 +13,9 @@
 - **Size:** 3.0KB
 - **Lines:** 106 lines of code
 
-### ✅ 2. LVGL v9.4 API Integration
+### ✅ 2. LVGL v9.5 API Integration
 
-All required LVGL v9.4 API functions are implemented:
+All required LVGL v9.5 API functions are implemented:
 
 ```python
 # Line 79: Set row count
@@ -173,7 +173,7 @@ text = await lv_text.process(cell_conf[CONF_TEXT])
 - [x] Import structure validation
 - [x] Schema validation correctness
 - [x] Pattern compliance with other widgets
-- [x] LVGL v9.4 API coverage
+- [x] LVGL v9.5 API coverage
 - [x] Documentation completeness
 
 ## Integration Points
@@ -241,7 +241,7 @@ lv_table_set_cell_value(obj, 0, 1, "Value");
 
 | Requirement | Status | Implementation |
 |------------|---------|----------------|
-| LVGL v9.4 API | ✅ Complete | All 4 functions implemented |
+| LVGL v9.5 API | ✅ Complete | All 4 functions implemented |
 | Row/Column Config | ✅ Complete | Full configuration support |
 | Cell Text & Styling | ✅ Complete | Text processing + ITEMS part |
 | Column Widths | ✅ Complete | Per-column width setting |
@@ -252,11 +252,11 @@ lv_table_set_cell_value(obj, 0, 1, "Value");
 
 ## Conclusion
 
-The LVGL v9.4 Table widget implementation is **COMPLETE** and **PRODUCTION-READY**.
+The LVGL v9.5 Table widget implementation is **COMPLETE** and **PRODUCTION-READY**.
 
 All requirements have been met:
 - ✅ Created following buttonmatrix.py grid pattern
-- ✅ Implemented all LVGL v9.4 table APIs
+- ✅ Implemented all LVGL v9.5 table APIs
 - ✅ Full row and column configuration
 - ✅ Cell text and styling support
 - ✅ Column width configuration

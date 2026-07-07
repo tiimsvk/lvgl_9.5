@@ -156,7 +156,7 @@ esp32:
       DCONFIG_USE_AUDIO_AAC_SUPPORT: "y"
       DCONFIG_ESP_JPG_DECODE_ENABLE: "y"
       DCONFIG_ESPHOME_ENABLE_PNGLE: "1"
-      CONFIG_SPIRAM_SPEED_200M: "y"  # ← NOUVEAU: 200 MHz au lieu de défaut
+      CONFIG_SPIRAM_SPEED_200M: "y"  # ← NEW: 200 MHz instead of default
       CONFIG_SPIRAM_SPEED: "200"
 
 
@@ -291,7 +291,7 @@ esp_video:
 
 
 # ============================================================================
-# Caméra MIPI-CSI 
+# MIPI-CSI Camera
 # ============================================================================
 esp_cam_sensor:
   id: tab5_cam
@@ -306,12 +306,12 @@ esp_cam_sensor:
   mirror_y: false
   crop_offset_x: 0
   #ppa_enabled: true
-  #output_width: 600    # Largeur après rotation 270°
-  #output_height: 460   # Hauteur après rotation 270°  
+  #output_width: 600    # Width after 270° rotation
+  #output_height: 460   # Height after 270° rotation
 
 
 # ============================================================================
-# Display LVGL avec caméra
+# LVGL Display with camera
 # ============================================================================           
 lvgl_camera_display:
   id: camera_display
@@ -345,8 +345,8 @@ face_detection:
   ##canvas_id: camera_canvas
   #score_threshold: 0.5
   #nms_threshold: 0.5
-  # Garder les 80 labels COCO par défaut (ne pas spécifier class_labels)
-  # Filtrer uniquement les 3 classes voulues par leur index COCO :
+  # Keep the default 80 COCO labels (do not specify class_labels)
+  # Filter only the 3 desired classes by their COCO index:
   #detect_classes:
     #- 0   # person
     #- 15  # cat
@@ -358,19 +358,19 @@ face_detection:
   #id: yolo_detect
   #camera_id: tab5_cam
   #canvas_id: camera_canvas
-  #model_id: yolo_model        # .espdl entraîné 3 classes
+  #model_id: yolo_model        # .espdl trained on 3 classes
   #model_type: espdet_pico
   #score_threshold: 0.3
   #nms_threshold: 0.6
   #draw_enabled: true
 
-  # Remplace la liste COCO par TES classes (ordre = sortie du modèle)
+  # Replace the COCO list with YOUR classes (order = model output)
   #class_labels:
     #- person
     #- cat
     #- dog    
 # ============================================================================
-# Detection de visages + reconnaissance (independant)
+# Face detection + recognition (independent)
 # ============================================================================
 
 
@@ -407,7 +407,7 @@ face_detection:
   #model_location: sdcard
   #model_path: "/sdcard/YOLO11"
   
-  ## Paramètres
+  ## Parameters
   #score_threshold: 0.45
   #nms_threshold: 0.5
   #detection_interval: 5
@@ -417,7 +417,7 @@ face_detection:
         #ESP_LOGI("main", "Objects détectés: %d", object_count);       
 
 # ============================================================================
-# Serveur Web HTTP (streaming MJPEG + snapshots)
+# HTTP Web Server (MJPEG streaming + snapshots)
 # ============================================================================
 #camera_web_server:
   #camera_id: tab5_cam

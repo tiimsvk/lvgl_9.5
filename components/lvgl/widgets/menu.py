@@ -1,5 +1,5 @@
 """
-LVGL v9.4 Menu Widget Implementation
+LVGL v9.5 Menu Widget Implementation
 
 The menu widget provides hierarchical navigation with:
 - Multiple pages/screens

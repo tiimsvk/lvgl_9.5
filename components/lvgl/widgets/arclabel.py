@@ -1,6 +1,6 @@
 """
 LVGL Arc Label Widget
-ESPHome compatible – LVGL 9.4
+ESPHome compatible – LVGL 9.5
 Native arclabel API (angle_start / angle_size / offset)
 """
 

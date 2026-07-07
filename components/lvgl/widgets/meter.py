@@ -96,9 +96,9 @@ CONF_SCALES = "scales"
 CONF_STRIDE = "stride"
 CONF_TICK_STYLE = "tick_style"
 
-# LVGL 9.4 Migration: Use scale widget instead of removed meter widget
+# LVGL 9.5 Migration: Use scale widget instead of removed meter widget
 #
-# The lv_meter widget was removed in LVGL 9.4 and replaced with the more
+# The lv_meter widget was removed in LVGL 9.5 and replaced with the more
 # flexible lv_scale widget. This implementation emulates meter functionality
 # using the scale widget with the following mappings:
 #
@@ -344,7 +344,7 @@ class MeterType(WidgetType):
         w = await super().create_to_code(outer_config, parent)
         var = w.obj
 
-        # LVGL 9.4 scale widget setup
+        # LVGL 9.5 scale widget setup
         # Background style will be applied.
         for scale_conf in config.get(CONF_SCALES, ()):
             scale_var = cg.Pvariable(scale_conf[CONF_ID], lv_expr.scale_create(var))

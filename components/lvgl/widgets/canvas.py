@@ -1,7 +1,7 @@
 """
-LVGL 9.4 Canvas Widget Implementation
+LVGL 9.5 Canvas Widget Implementation
 
-This module implements the canvas widget for LVGL 9.4. Key changes from LVGL 8.4:
+This module implements the canvas widget for LVGL 9.5. Key changes from LVGL 8.4:
 
 1. Buffer allocation:
    - LV_IMG_CF_TRUE_COLOR → LV_COLOR_FORMAT_RGB565
@@ -94,14 +94,14 @@ class CanvasType(WidgetType):
     async def to_code(self, w: Widget, config):
         width = config[CONF_WIDTH]
         height = config[CONF_HEIGHT]
-        # LVGL 9.4: Use LV_COLOR_FORMAT instead of LV_IMG_CF
+        # LVGL 9.5: Use LV_COLOR_FORMAT instead of LV_IMG_CF
         # RGB565 is 16-bit (2 bytes per pixel), ARGB8888 is 32-bit (4 bytes per pixel)
         if config[CONF_TRANSPARENT]:
             color_format = "LV_COLOR_FORMAT_ARGB8888"
         else:
             color_format = "LV_COLOR_FORMAT_NATIVE"
 
-        # LVGL 9.4: Canvas buffer allocation
+        # LVGL 9.5: Canvas buffer allocation
         # The issue: lv_expr.malloc_core() generates an expression that is never evaluated
         # Solution: Use lv.malloc_core() which executes immediately
 
@@ -287,7 +287,7 @@ async def canvas_set_pixel(config, action_id, template_arg, args):
     ]
 
     async def do_set_pixels(w: Widget):
-        # LVGL 9.4: lv_canvas_set_px combines color and opacity
+        # LVGL 9.5: lv_canvas_set_px combines color and opacity
         for point in points:
             x, y = point
             lv.canvas_set_px(w.obj, x, y, color, opa)
@@ -364,7 +364,7 @@ async def draw_to_code(config, dsc_type, props, do_draw, action_id, template_arg
     y = await pixels.process(config.get(CONF_Y))
 
     async def action_func(w: Widget):
-        # LVGL 9.4: Create a layer for drawing on canvas
+        # LVGL 9.5: Create a layer for drawing on canvas
         with LocalVariable("layer", "lv_layer_t", modifier="") as layer:
             lv.canvas_init_layer(w.obj, addr(layer))
             with LocalVariable("dsc", f"lv_draw_{dsc_type}_dsc_t", modifier="") as dsc:
@@ -410,7 +410,7 @@ RECT_PROPS = {
 
 
 def _draw_line(layer, dsc, points):
-    # LVGL 9.4: Use lv_draw_line for each line segment
+    # LVGL 9.5: Use lv_draw_line for each line segment
     with (
         LocalVariable(
             "points", FixedVector.template(lv_point_precise_t), points, modifier=""
@@ -445,7 +445,7 @@ async def canvas_draw_rect(config, action_id, template_arg, args):
     height = await pixels.process(config[CONF_HEIGHT])
 
     async def do_draw_rect(layer, x, y, dsc):
-        # LVGL 9.4: Use lv_draw_rect with area
+        # LVGL 9.5: Use lv_draw_rect with area
         with LocalVariable("area", "lv_area_t", modifier="") as area:
             lv_assign(area.x1, x)
             lv_assign(area.y1, y)
@@ -491,7 +491,7 @@ async def canvas_draw_text(config, action_id, template_arg, args):
     max_width = await pixels.process(config[CONF_MAX_WIDTH])
 
     async def do_draw_text(layer, x, y, dsc):
-        # LVGL 9.4: Use lv_draw_label with area and hint
+        # LVGL 9.5: Use lv_draw_label with area and hint
         with LocalVariable("area", "lv_area_t", modifier="") as area:
             lv_assign(area.x1, x)
             lv_assign(area.y1, y)
@@ -561,7 +561,7 @@ async def canvas_draw_image(config, action_id, template_arg, args):
     pivot_y = await pixels.process(config[CONF_PIVOT_Y])
 
     async def do_draw_image(layer, x, y, dsc):
-        # LVGL 9.4: Use lv_draw_image with area
+        # LVGL 9.5: Use lv_draw_image with area
         lv_assign(dsc.src, src.get_lv_image_dsc())
         if pivot_x or pivot_y:
             # pylint :disable=no-member
@@ -644,7 +644,7 @@ async def canvas_draw_polygon(config, action_id, template_arg, args):
     points.append(points[0])
 
     async def do_draw_polygon(layer, x, y, dsc):
-        # LVGL 9.4: Draw polygon using line drawing in a closed path
+        # LVGL 9.5: Draw polygon using line drawing in a closed path
         # Note: This draws outline only. For filled polygons, would need different approach
         # Convert rect descriptor to line descriptor for polygon outline
         with LocalVariable("line_dsc", "lv_draw_line_dsc_t", modifier="") as line_dsc:
@@ -687,7 +687,7 @@ async def canvas_draw_arc(config, action_id, template_arg, args):
     end_angle = await lv_angle_degrees.process(config[CONF_END_ANGLE])
 
     async def do_draw_arc(layer, x, y, dsc):
-        # LVGL 9.4: Use lv_draw_arc with center point
+        # LVGL 9.5: Use lv_draw_arc with center point
         lv_assign(dsc.center.x, x)
         lv_assign(dsc.center.y, y)
         lv_assign(dsc.start_angle, start_angle)

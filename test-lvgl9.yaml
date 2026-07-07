@@ -48,7 +48,7 @@ esp32:
       DCONFIG_USE_AUDIO_AAC_SUPPORT: "y"
       DCONFIG_ESP_JPG_DECODE_ENABLE: "y"
       DCONFIG_ESPHOME_ENABLE_PNGLE: "1"
-      #CONFIG_SPIRAM_SPEED_200M: "y"  # ← NOUVEAU: 200 MHz au lieu de défaut
+      #CONFIG_SPIRAM_SPEED_200M: "y"  # ← NEW: 200 MHz instead of default
       #CONFIG_SPIRAM_SPEED: "200"
 
 # Enable logging
@@ -164,7 +164,7 @@ esp_video:
 esp_cam_sensor:
   id: tab5_cam
   i2c_id: bsp_bus
-  sensor_type: ov5647        #"sensor_type" au lieu de "sensor"
+  sensor_type: ov5647        #"sensor_type" instead of "sensor"
   resolution: "640x480"          # 800x640 , 1024x600 ,vga
   pixel_format: "RGB565"      # Zero-copy 
   framerate: 30
@@ -236,9 +236,9 @@ simple_video_player:
   fps: 15       # ← LVGL parent screen
   #buffer_size: 524288             # 512 KB
   #cache_buffer_size: 131072       # 128 KB
-  show_controls: true             # ← Afficher contrôles
-  #show_slider: true               # ← Afficher slider
-  auto_play: false                # ← Auto-démarrage
+  show_controls: true             # ← Show controls
+  #show_slider: true               # ← Show slider
+  auto_play: false                # ← Auto-start
   loop: false
   rotation: 0
   preload_to_memory: false
@@ -446,7 +446,7 @@ sensor:
   #- platform: template
     #name: "Enrolled Faces"
     #icon: "mdi:face-man"
-    #lambda: return id(face_detect).get_enrolled_count();  # Changer ici
+    #lambda: return id(face_detect).get_enrolled_count();  # Change here
     #update_interval: 5s
   - platform: homeassistant
     id: weather_humidity
@@ -483,7 +483,7 @@ text_sensor:
     name: "Camera Status Info"
     id: camera_status_info
     internal: true
-    update_interval: never  # Désactivé par défaut
+    update_interval: never  # Disabled by default
     lambda: |-
       static char buf[100];
       snprintf(buf, sizeof(buf), "%dx%d | %s | Buffer: %d KB",
@@ -504,17 +504,17 @@ globals:
   - id: sleep_display_start
     type: uint32_t
     initial_value: '0'  
-  # Etat de verrouillage de l'ecran
+  # Screen lock state
   - id: display_lock
     type: bool
     initial_value: 'false'
 
-  # Timestamp de debut du timeout sur face_unlock_page
+  # Timestamp of the timeout start on face_unlock_page
   - id: unlock_timeout_start
     type: uint32_t
     initial_value: '0'
 
-  # Duree du timeout sur face_unlock_page (en secondes)
+  # Timeout duration on face_unlock_page (in seconds)
   - id: face_unlock_timeout_sec
     type: int
     initial_value: '145'
@@ -533,7 +533,7 @@ globals:
     initial_value: '8'
   - id: slideshow_active
     type: bool
-    initial_value: 'false'  # Démarre en pause
+    initial_value: 'false'  # Starts paused
 
   - id: slideshow_delay
     type: int
@@ -548,7 +548,7 @@ globals:
   - id: current_radio_station
     type: int
     restore_value: true
-    initial_value: '0'  # Commence avec Fun Radio (0=Fun, 1=Skyrock, 2=Sud, 3=RTL2)  
+    initial_value: '0'  # Starts with Fun Radio (0=Fun, 1=Skyrock, 2=Sud, 3=RTL2)
 
   - id: display_timeout
     type: int
@@ -562,7 +562,7 @@ globals:
   - id: timer_running
     type: bool
     restore_value: no
-    initial_value: 'false' # Indique si le timer est en cours d'exécution    
+    initial_value: 'false' # Indicates whether the timer is currently running
 
   - id: timer_started
     type: bool
@@ -663,7 +663,7 @@ globals:
   - id: volume_before_mute
     type: float
     initial_value: '0.5'
-  # Nouveau global pour empêcher le sleep pendant les interactions
+  # New global to prevent sleep during interactions
   - id: touch_active
     type: bool
     initial_value: 'false'
@@ -985,8 +985,8 @@ font:
       "\U000F0439",#radio
       "\U000F0BB1",#next
       "\U000F036B",#videocall
-      "\U000F1A13",#heure
-      "\U000F0F30",#meteo
+      "\U000F1A13",#time
+      "\U000F0F30",#weather
       "\U000F1923",#timer
       "\U000F056E",#dashboard
       "\U000F07DC",#micro-sd
@@ -1035,8 +1035,8 @@ font:
       "\U000F0439",#radio
       "\U000F0BB1",#next
       "\U000F036B",#videocall
-      "\U000F1A13",#heure
-      "\U000F0F30",#meteo
+      "\U000F1A13",#time
+      "\U000F0F30",#weather
       "\U000F1923",#timer
       "\U000F056E",#dashboard
       "\U000F07DC",#micro-sd
@@ -1246,8 +1246,8 @@ font:
       "\U000F0521",#toggle on
       "\U000F0439",#radio_active
       "\U000F0CB8",#music_play
-      "\U000F1A13",#heure
-      "\U000F0F30",#meteo
+      "\U000F1A13",#time
+      "\U000F0F30",#weather
       "\U000F1923",#timer
       "\U000F02A4",#github
       "\U000F062C",#source
@@ -1264,7 +1264,7 @@ font:
       "\U000F02E9",#Gallery
       "\U000F07D1",#home-automation
       "\U000F18DE",#ceiling-light-multiple-outline
-      "\U000F0450",# Icône rafraîchir
+      "\U000F0450",# Refresh icon
       "\U000F061A", # illumination (lux)
 
                       
@@ -1570,7 +1570,7 @@ lvgl:
       shadow_width: 0
 
     - id: round_mask
-      radius: 50%  # Crée un cercle parfait
+      radius: 50%  # Creates a perfect circle
       clip_corner: true
 
 
@@ -1646,7 +1646,7 @@ lvgl:
       bg_opa: TRANSP
       border_opa: TRANSP
       radius: 0
-      text_color: 0xCCCCCC  # Gris clair pour le texte
+      text_color: 0xCCCCCC  # Light gray for the text
       width: 100%
       height: 100%
 
@@ -1766,12 +1766,12 @@ lvgl:
         bg_color: color_black
         on_load:
           then:
-            # ✅ Image (fonctionne maintenant!)
+            # ✅ Image (works now!)
             - lvgl.image.update:
                 id: update_wallpaper
                 src: peaceful  # sd_image ID   
         widgets:
-          # Fond d'écran
+          # Wallpaper
           - obj:
               id: background
               width: 1024
@@ -1781,7 +1781,7 @@ lvgl:
               border_width: 0
               radius: 0
 
-          # Image - PAS de src ici, chargé dans on_load
+          # Image - NO src here, loaded in on_load
           - image:
               id: update_wallpaper
               src: peaceful
@@ -1930,9 +1930,9 @@ lvgl:
               radius: 0
               pad_all: 0       
 
-          # ===== BOUTONS DROITE (Camera Control) =====
+          # ===== RIGHT BUTTONS (Camera Control) =====
           
-          # Bouton START (vert)
+          # START button (green)
           - button:
               id: btn_start_streaming
               width: 80
@@ -1961,7 +1961,7 @@ lvgl:
                     align: CENTER
 
 
-          # Bouton STOP (rouge)
+          # STOP button (red)
           - button:
               id: btn_stop_streaming
               width: 80

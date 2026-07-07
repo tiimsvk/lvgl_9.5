@@ -1,8 +1,8 @@
-# LVGL v9.4 Calendar Widget for ESPHome
+# LVGL v9.5 Calendar Widget for ESPHome
 
 ## Overview
 
-This implementation provides a complete LVGL v9.4 Calendar widget for ESPHome, allowing users to display interactive calendars with date selection, navigation, and highlighting capabilities.
+This implementation provides a complete LVGL v9.5 Calendar widget for ESPHome, allowing users to display interactive calendars with date selection, navigation, and highlighting capabilities.
 
 ## Features
 
@@ -28,11 +28,11 @@ Main Python implementation with:
 Added C++ class definition:
 - `LvCalendarType` class extending `LvCompound`
 - Methods: `get_selected_year()`, `get_selected_month()`, `get_selected_day()`
-- Uses LVGL v9.4 API: `lv_calendar_get_pressed_date()`
+- Uses LVGL v9.5 API: `lv_calendar_get_pressed_date()`
 
-## LVGL v9.4 API Usage
+## LVGL v9.5 API Usage
 
-The implementation uses these LVGL v9.4 calendar functions:
+The implementation uses these LVGL v9.5 calendar functions:
 
 ```c
 lv_obj_t * lv_calendar_create(lv_obj_t * parent);
@@ -361,7 +361,7 @@ ESPHome will automatically enable this when the calendar widget is used.
 
 ## Notes
 
-- The calendar widget is based on LVGL v9.4 API
+- The calendar widget is based on LVGL v9.5 API
 - Date validation ensures valid date ranges
 - Highlighted dates are stored as static arrays for efficiency
 - The widget inherits from `LvCompound` to support complex value types

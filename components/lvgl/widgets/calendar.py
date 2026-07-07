@@ -147,7 +147,7 @@ class CalendarType(WidgetType):
             lv.calendar_set_today_date(w.obj, year, month, day)
 
         # Set showed date (initial display month)
-        # LVGL 9.4 API: lv_calendar_set_month_shown(obj, year, month) - no day param
+        # LVGL 9.5 API: lv_calendar_set_month_shown(obj, year, month) - no day param
         if showed := config.get(CONF_SHOWED_DATE):
             year = await lv_int.process(showed.get(CONF_YEAR, 2024))
             month = await lv_int.process(showed.get(CONF_MONTH, 1))
@@ -225,7 +225,7 @@ async def calendar_update_to_code(config, action_id, template_arg, args):
                 lv.calendar_set_today_date(w.obj, year, month, day)
 
         # Update showed date
-        # LVGL 9.4 API: lv_calendar_set_month_shown(obj, year, month) - no day param
+        # LVGL 9.5 API: lv_calendar_set_month_shown(obj, year, month) - no day param
         if showed := config.get(CONF_SHOWED_DATE):
             year = await process_date_field(showed.get(CONF_YEAR), 2024)
             month = await process_date_field(showed.get(CONF_MONTH), 1)

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation provides support for the LVGL v9.4 Arc Label widget (`lv_arclabel`) in ESPHome. The Arc Label widget displays text along a curved or circular path, perfect for circular displays and decorative text elements.
+This implementation provides support for the LVGL v9.5 Arc Label widget (`lv_arclabel`) in ESPHome. The Arc Label widget displays text along a curved or circular path, perfect for circular displays and decorative text elements.
 
 ## File Location
 
@@ -10,9 +10,9 @@ This implementation provides support for the LVGL v9.4 Arc Label widget (`lv_arc
 
 ## Implementation Details
 
-### LVGL v9.4 API Support
+### LVGL v9.5 API Support
 
-The implementation uses LVGL v9.4 Arc Label API functions for displaying text along curved paths.
+The implementation uses LVGL v9.5 Arc Label API functions for displaying text along curved paths.
 
 ### Features
 
@@ -94,7 +94,7 @@ lvgl:
 
 ## References
 
-- [LVGL v9.4 Arc Label Documentation](https://docs.lvgl.io/9.4/details/widgets/arclabel.html)
+- [LVGL v9.5 Arc Label Documentation](https://docs.lvgl.io/9.5/details/widgets/arclabel.html)
 
 ---
 

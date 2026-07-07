@@ -1,4 +1,5 @@
 import importlib
+import logging
 from pathlib import Path
 import pkgutil
 
@@ -76,6 +77,8 @@ from .widgets.page import (  # page_spec used in LVGL_SCHEMA
     page_spec,
 )
 
+_LOGGER = logging.getLogger(__name__)
+
 # Widget registration happens via WidgetType.__init__ in individual widget files
 # The imports below trigger creation of the widget types
 # Action registration (lvgl.{widget}.update) happens automatically
@@ -91,6 +94,7 @@ CODEOWNERS = ["@youkorr"]  # LVGL 9.5.0 implementation with ThorVG enabled by de
 HELLO_WORLD_FILE = "hello_world.yaml"
 CONF_USE_PPA = "use_ppa"
 CONF_USE_PPA_IMG = "use_ppa_img"
+CONF_ROTATION_BUFFERS_INTERNAL = "rotation_buffers_internal"
 CONF_USE_FPS_BENCHMARK = "fps_benchmark"
 CONF_USE_PERF_MONITOR = "perf_monitor"
 
@@ -240,6 +244,35 @@ async def to_code(configs):
     cg.add_library("lvgl/lvgl", "9.5.0")
     cg.add_define("USE_LVGL")
 
+    # Since ESPHome 2026.6 the lvgl/lvgl library is built as a managed ESP-IDF
+    # component (__idf_lvgl) compiled separately from the app. Its 9.5.0
+    # lv_freertos.c does #include "atomic.h" (LVGL #7589), which only exists on
+    # ESP-IDF as <freertos/atomic.h>. We ship a header-only local IDF component
+    # (atomic_shim/) whose CMakeLists globally injects its dir as -I so the
+    # managed lvgl component can resolve the bare include. Needed because we run
+    # LV_USE_OS=LV_OS_FREERTOS (the lottie/svg async loaders call lv_lock()).
+    if CORE.is_esp32:
+        from esphome.components import esp32
+
+        # Drop the atomic.h shim in as a plain ESP-IDF component under the
+        # project's auto-scanned components/ dir (add_extra_build_file copies to
+        # <build>/<name>). This avoids the component MANAGER entirely:
+        # add_idf_component(path=...) writes a self-referential override_path
+        # that IDF rejects ("path does not point to a directory") when the
+        # component lives inside the generated src tree. A component in
+        # <build>/components/ is discovered natively; its CMakeLists appends the
+        # dir to the global COMPILE_OPTIONS (-I) so the separately-built managed
+        # __idf_lvgl can resolve lv_freertos.c's bare #include "atomic.h".
+        shim_src = Path(__file__).parent / "atomic_shim"
+        esp32.add_extra_build_file(
+            "components/lvgl_atomic_shim/CMakeLists.txt",
+            shim_src / "CMakeLists.txt",
+        )
+        esp32.add_extra_build_file(
+            "components/lvgl_atomic_shim/atomic.h",
+            shim_src / "atomic.h",
+        )
+
     # Add build filter to exclude LVGL platform code not needed for ESP32
     # This reduces compilation time and binary size significantly
     build_filter_script = Path(__file__).parent / "lvgl_build_filter.py"
@@ -265,26 +298,43 @@ async def to_code(configs):
     df.add_define("LV_DRAW_BUF_ALIGN", "4")
     use_ppa = config_0.get(CONF_USE_PPA, False)
     use_ppa_img = config_0.get(CONF_USE_PPA_IMG, False)
+    use_fps_benchmark = config_0.get(CONF_USE_FPS_BENCHMARK, False)
+    use_perf_monitor = config_0.get(CONF_USE_PERF_MONITOR, False)
     # use_ppa_img implies use_ppa (SRM client needs PPA init)
     if use_ppa_img:
         use_ppa = True
+    # These are ESP32-only features and pull in code that doesn't exist on other
+    # targets: PPA is ESP32-P4 hardware (sdkconfig.h / driver/ppa.h / esp_timer /
+    # FreeRTOS), the FPS benchmark uses Espressif's esp_lvgl_adapter, and the
+    # perf_monitor overlay relies on a FreeRTOS-only linker wrap. When the build
+    # target is not ESP32 (e.g. the host/native SDL build) they are forced off,
+    # so the SAME YAML/include file can be reused unchanged on host and ESP32.
+    if not CORE.is_esp32 and (use_ppa or use_ppa_img or use_fps_benchmark or use_perf_monitor):
+        _LOGGER.warning(
+            "lvgl: use_ppa / use_ppa_img / fps_benchmark / perf_monitor are "
+            "ESP32-only; ignoring them on this platform (%s).",
+            CORE.target_platform,
+        )
+        use_ppa = use_ppa_img = use_fps_benchmark = use_perf_monitor = False
     if use_ppa:
         # LVGL 9.5 includes the PPA fix (PR #9162) natively.
         # We keep our custom PPA files as a fallback option.
         # PPA evaluate checks buffer alignment at runtime before claiming tasks.
         cg.add_define("USE_LVGL_PPA")
-        ppa_dir = Path(__file__).parent / "ppa"
-        cg.add_build_flag(f"-I{ppa_dir}")
+        # PPA .tcc units + their .h now live at the component top level (they are
+        # #included by lv_draw_ppa_wrapper.cpp, same directory), so no extra
+        # include path is needed. A ppa/ subdir would not be copied into the
+        # build under ESPHome 2026.6+ (external components lack recursive_sources).
     if use_ppa_img:
         # Enable PPA SRM hardware rotation for images (0/90/180/270 degrees)
         cg.add_define("LV_USE_PPA_IMG")
-    if config_0.get(CONF_USE_FPS_BENCHMARK, False):
+    if use_fps_benchmark:
         # Espressif esp_lvgl_adapter FPS sampler (P10/25/50/75/90 report).
         # lvgl_fps_benchmark_wrapper.cpp includes esphome/core/defines.h
         # and conditionally pulls in the .c — ESPHome only auto-compiles
         # .cpp at the component root.
         cg.add_define("USE_LVGL_FPS_BENCHMARK")
-    if config_0.get(CONF_USE_PERF_MONITOR, False):
+    if use_perf_monitor:
         # On-screen FPS/CPU overlay (bottom-right corner, native LVGL widget).
         # Perf monitor is gated by LV_USE_SYSMON in lv_conf_internal.h, which
         # is itself gated by LV_USE_LOG (text rendering for the label).
@@ -326,7 +376,9 @@ async def to_code(configs):
     # Side effect: LVGL sysmon's CPU%% overlay reads 100%% — a known LVGL
     # quirk with LV_OS_FREERTOS on ESPHome. Ignore the displayed CPU%%;
     # the FPS and ms numbers are still accurate.
-    df.add_define("LV_USE_OS", "LV_OS_FREERTOS")
+    # Off-ESP32 (e.g. the host/native SDL build) there is no FreeRTOS, so use
+    # LVGL's no-OS backend instead — otherwise LVGL pulls in FreeRTOS.h.
+    df.add_define("LV_USE_OS", "LV_OS_FREERTOS" if CORE.is_esp32 else "LV_OS_NONE")
 
     # Refresh period: 15 ms ≈ 66 Hz attempt rate (recommended by LVGL
     # community for smoother sysmon readings; doesn't force higher FPS).
@@ -414,6 +466,12 @@ async def to_code(configs):
             cg.add(lv_component.set_big_endian(config[CONF_BYTE_ORDER] == "big_endian"))
             if CONF_ROTATION in config:
                 cg.add(lv_component.set_lvgl_rotation(config[CONF_ROTATION]))
+            if config.get(CONF_ROTATION_BUFFERS_INTERNAL):
+                cg.add(
+                    lv_component.set_rotation_buffers_internal(
+                        config[CONF_ROTATION_BUFFERS_INTERNAL]
+                    )
+                )
             await touchscreens_to_code(lv_component, config)
             await encoders_to_code(lv_component, config, default_group)
             await keypads_to_code(lv_component, config, default_group)
@@ -498,11 +556,17 @@ async def to_code(configs):
         "TABLE", "TABVIEW", "TEXTAREA", "TILEVIEW", "WIN",
     }
 
-    # Add ESPHome-specific defines; add LV_USE_* only for non-widget entries
+    # Add ESPHome-specific defines; add LV_USE_* only for non-widget entries.
+    # NOTE: only define USE_LVGL_<X>. Do NOT define the core USE_<X> here: for
+    # widget names that collide with real components (switch, sensor,
+    # binary_sensor, image, ...) that would make esphome/core/entity_includes.h
+    # and lvgl_esphome.h pull in component headers that are not actual
+    # dependencies -> "esphome/components/switch/switch.h: No such file". The
+    # real core USE_<X> is defined by the component itself when it is loaded
+    # (image/font/binary_sensor are pulled in via requires_component when used).
     for use in helpers.lv_uses:
         upper = use.upper()
         cg.add_define(f"USE_LVGL_{upper}")
-        cg.add_define(f"USE_{upper}")
         canonical = _TO_CANONICAL.get(upper, upper)
         if canonical not in _ALL_CANONICAL_WIDGETS:
             # Non-widget entry (e.g. LOG, THEME_DEFAULT, USER_DATA)
@@ -548,8 +612,10 @@ async def to_code(configs):
         df.add_define("LV_VG_LITE_THORVG_16PIXELS_ALIGN", "1")
         # Large stack for ThorVG rendering
         df.add_define("LV_DRAW_THREAD_STACK_SIZE", "(48 * 1024)")
-        # pngdec only needed for ThorVG image pipeline
-        cg.add_library("pngdec", "1.0.1")
+        # NOTE: ThorVG has its OWN built-in PNG decoder (LodePng, in
+        # thorvg/src/loaders/png/). The bitbank2 "pngdec" library is Arduino-only
+        # (requires <Arduino.h>) and is NOT used by any code here, so pulling it
+        # broke the ESP-IDF build under ESPHome 2026.6+. Removed.
         # Signal to lvgl_build_filter.py to compile ThorVG sources
         cg.add_build_flag("-DLVGL_USE_THORVG=1")
         df.LOGGER.info("ThorVG enabled (SVG/Lottie widgets detected)")
@@ -584,7 +650,16 @@ async def to_code(configs):
     lv_conf_h_file = CORE.relative_src_path(LV_CONF_FILENAME)
     write_file_if_changed(lv_conf_h_file, generate_lv_conf_h())
     cg.add_build_flag("-DLV_CONF_H=1")
-    cg.add_build_flag(f'-DLV_CONF_PATH=\\"{LV_CONF_FILENAME}\\"')
+    # Use the ABSOLUTE path to lv_conf.h. Since ESPHome 2026.6 LVGL is built as a
+    # managed ESP-IDF component (__idf_lvgl) compiled separately from the app, so
+    # a bare "lv_conf.h" (resolved via -Isrc) is NOT on that component's include
+    # path -> "fatal error: lv_conf.h: No such file or directory". An absolute
+    # path in LV_CONF_PATH resolves regardless of include dirs. Matches upstream.
+    lv_conf_h_path = Path(lv_conf_h_file).as_posix()
+    cg.add_build_flag(f'-DLV_CONF_PATH=\\"{lv_conf_h_path}\\"')
+    # LVGL's lv_conf_internal.h otherwise tries to pull options from Kconfig
+    # (sdkconfig) on ESP-IDF, which conflicts with our generated lv_conf.h.
+    cg.add_build_flag("-DLV_KCONFIG_IGNORE")
     # Add include path for atomic.h shim (needed for LV_USE_OS=LV_OS_FREERTOS on ESP-IDF)
     # Use absolute path so it works when LVGL compiles from .piolibdeps/
     component_dir = Path(__file__).parent
@@ -642,6 +717,12 @@ LVGL_SCHEMA = cv.All(
                 # the display: component. DSI panels have no MADCTL hardware
                 # rotation, so the framebuffer is rotated by the PPA here.
                 cv.Optional(CONF_ROTATION): cv.enum(DISPLAY_ROTATIONS, int=True),
+                # Opt-in: keep the rotation pipeline buffers in internal SRAM
+                # instead of PSRAM. Helps PSRAM-bandwidth-limited ESP32-P4
+                # silicon (e.g. rev v1.0) by cutting per-frame PSRAM traffic.
+                cv.Optional(
+                    CONF_ROTATION_BUFFERS_INTERNAL, default=False
+                ): cv.boolean,
                 cv.Optional(
                     df.CONF_DEFAULT_FONT, default="montserrat_14"
                 ): lvalid.lv_font,

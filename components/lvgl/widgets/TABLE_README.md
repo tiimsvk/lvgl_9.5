@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation provides full support for the LVGL v9.4 Table widget (`lv_table`) in ESPHome. The table widget displays data in a grid format with configurable rows, columns, and cell content.
+This implementation provides full support for the LVGL v9.5 Table widget (`lv_table`) in ESPHome. The table widget displays data in a grid format with configurable rows, columns, and cell content.
 
 ## File Location
 
@@ -10,9 +10,9 @@ This implementation provides full support for the LVGL v9.4 Table widget (`lv_ta
 
 ## Implementation Details
 
-### LVGL v9.4 API Support
+### LVGL v9.5 API Support
 
-The implementation uses the following LVGL v9.4 API functions:
+The implementation uses the following LVGL v9.5 API functions:
 
 1. **`lv_table_create(parent)`** - Creates the table widget (handled automatically by the framework)
 2. **`lv_table_set_row_count(obj, row_count)`** - Sets the number of rows
@@ -268,6 +268,6 @@ Potential additions (not currently implemented):
 
 ## References
 
-- LVGL v9.4 Table Documentation: https://docs.lvgl.io/9.4/widgets/table.html
+- LVGL v9.5 Table Documentation: https://docs.lvgl.io/9.5/widgets/table.html
 - ESPHome LVGL Integration: https://esphome.io/components/lvgl/
 - Implementation based on ESPHome widget patterns

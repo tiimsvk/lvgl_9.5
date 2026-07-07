@@ -150,7 +150,7 @@ esp32:
       DCONFIG_USE_AUDIO_AAC_SUPPORT: "y"
       DCONFIG_ESP_JPG_DECODE_ENABLE: "y"
       DCONFIG_ESPHOME_ENABLE_PNGLE: "1"
-      CONFIG_SPIRAM_SPEED_200M: "y"  # ← NOUVEAU: 200 MHz au lieu de défaut
+      CONFIG_SPIRAM_SPEED_200M: "y"  # ← NEW: 200 MHz instead of default
       CONFIG_SPIRAM_SPEED: "200"   
 
       
@@ -224,12 +224,12 @@ esp_video:
   use_heap_allocator: true
   
 # ============================================================================
-# Caméra MIPI-CSI 
+# Camera MIPI-CSI 
 # ============================================================================
 esp_cam_sensor:
   id: tab5_cam
   i2c_id: bsp_bus
-  sensor_type: sc202cs         #"sensor_type" au lieu de "sensor"
+  sensor_type: sc202cs         #"sensor_type" instead of "sensor"
   resolution: "1280x720"           # , 1024x600 ,vga
   pixel_format: "RGB565"      # Zero-copy 
   framerate: 30
@@ -273,7 +273,7 @@ storage:
         byte_order: little_endian  
   
 # ============================================================================
-# Display LVGL avec caméra
+# Display LVGL with camera
 # ============================================================================  
 #lvgl_camera_display:
   #id: camera_display

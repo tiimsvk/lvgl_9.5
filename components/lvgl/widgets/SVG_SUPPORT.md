@@ -1,13 +1,13 @@
-# SVG Support in LVGL 9.4 for ESPHome
+# SVG Support in LVGL 9.5 for ESPHome
 
 ## Overview
 
-LVGL 9.4 provides native SVG support through the ThorVG vector graphics engine. SVG files can be used anywhere regular images are used, with the benefit of scalable vector graphics that look perfect at any size.
+LVGL 9.5 provides native SVG support through the ThorVG vector graphics engine. SVG files can be used anywhere regular images are used, with the benefit of scalable vector graphics that look perfect at any size.
 
 ## Requirements
 
-1. **LVGL 9.4** - SVG support is only available in LVGL v9+
-2. **ThorVG** - The vector graphics rendering engine (built into LVGL 9.4)
+1. **LVGL 9.5** - SVG support is only available in LVGL v9+
+2. **ThorVG** - The vector graphics rendering engine (built into LVGL 9.5)
 3. **Build Configuration** - Enable `LV_USE_THORVG_INTERNAL` and `LV_USE_SVG`
 
 ## Configuration

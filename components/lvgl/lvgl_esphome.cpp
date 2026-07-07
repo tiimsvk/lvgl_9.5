@@ -4,7 +4,38 @@
 #include "esphome/core/log.h"
 #include "lvgl_esphome.h"
 
+#include <utility>  // std::swap
+
 #include "core/lv_obj_class_private.h"
+
+// Portable bits so the component also builds on non-ESP32 targets (host/SDL).
+#ifdef USE_ESP32
+#include "esp_timer.h"
+#include "esp_heap_caps.h"
+#include "esp_memory_utils.h"  // esp_ptr_internal()
+#include "esp_cache.h"         // esp_cache_msync()
+#else
+#include <chrono>
+#endif
+#if defined(__GLIBC__) || defined(__ANDROID__)
+#include <malloc.h>  // malloc_usable_size()
+#endif
+
+namespace esphome {
+namespace lvgl {
+// Monotonic microsecond timestamp used for the perf/FPS accounting. Uses the
+// ESP timer on-target and std::chrono elsewhere.
+static inline uint64_t lvgl_now_us() {
+#ifdef USE_ESP32
+  return static_cast<uint64_t>(esp_timer_get_time());
+#else
+  return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
+                                   std::chrono::steady_clock::now().time_since_epoch())
+                                   .count());
+#endif
+}
+}  // namespace lvgl
+}  // namespace esphome
 
 #ifdef USE_LVGL_PPA
 #include "driver/ppa.h"
@@ -81,8 +112,12 @@ static ppa_client_handle_t s_display_srm_client = nullptr;
  *   270° CW → PPA_SRM_ROTATION_ANGLE_90  (90° CCW)
  */
 static bool ppa_rotate_display_buf(const void *src, void *dst, int32_t w, int32_t h,
-                                   display::DisplayRotation rot) {
+                                   display::DisplayRotation rot, size_t src_capacity, size_t dst_capacity) {
   if (s_display_srm_client == nullptr || w < 2 || h < 2)
+    return false;
+  // A null buffer would silently pass the alignment check below (0 & 127 == 0)
+  // and then crash inside esp_cache_msync / the PPA. Reject explicitly.
+  if (src == nullptr || dst == nullptr)
     return false;
 
   // ESP32-P4 PPA requires both buffer address and buffer_size to be aligned
@@ -127,6 +162,26 @@ static bool ppa_rotate_display_buf(const void *src, void *dst, int32_t w, int32_
 
   size_t out_bytes = (size_t) out_w * out_h * BPP;
   size_t aligned_out_bytes = (out_bytes + CACHE_LINE - 1) & ~(CACHE_LINE - 1);
+  size_t in_bytes = ((size_t) w * h * BPP + CACHE_LINE - 1) & ~(CACHE_LINE - 1);
+
+  // Safety: the source read range and the rotated output must fit inside their
+  // buffers. If the geometry is inconsistent (e.g. `display:` rotation stacked
+  // on top of `lvgl: rotation:`, which swaps dimensions twice), the PPA would
+  // otherwise write past rotate_buf_ and corrupt adjacent memory -> garbage
+  // pointer -> crash in esp_cache_msync. Fall back to software instead.
+  if (in_bytes > src_capacity || aligned_out_bytes > dst_capacity) {
+    static bool warned = false;
+    if (!warned) {
+      warned = true;
+      ESP_LOGE(TAG,
+               "PPA display rotation skipped: geometry does not fit the buffers "
+               "(in=%zuB/cap %zuB, out=%zuB/cap %zuB, %dx%d). This usually means "
+               "rotation is applied twice (both `display:` and `lvgl: rotation:`). "
+               "Set rotation in only ONE of them.",
+               in_bytes, src_capacity, aligned_out_bytes, dst_capacity, (int) w, (int) h);
+    }
+    return false;
+  }
 
   ppa_srm_oper_config_t cfg = {};
   cfg.in.buffer = (void *) src;
@@ -146,6 +201,17 @@ static bool ppa_rotate_display_buf(const void *src, void *dst, int32_t w, int32_
   cfg.alpha_update_mode = PPA_ALPHA_NO_CHANGE;
   cfg.mode = PPA_TRANS_MODE_BLOCKING;
 
+  // Cache coherency around the PPA DMA transfer. The PPA driver does NOT
+  // maintain cache for user buffers, so without this the rotated frame shows
+  // color scintillation + trembling: the PPA writes the output to (PS)RAM by
+  // DMA, but draw_pixels_at() reads it back through the CPU cache and sees
+  // stale/partial lines.
+  //   - Input: write back the CPU-rendered source so the PPA reads fresh data.
+  //   - Output: invalidate after the transfer so the panel push reads fresh data.
+  // src/dst are already 128-byte (cache-line) aligned (checked above); the sizes
+  // were rounded up to the cache line and validated to fit their buffers above.
+  esp_cache_msync((void *) src, in_bytes, ESP_CACHE_MSYNC_FLAG_DIR_C2M);
+
   esp_err_t ret = ppa_do_scale_rotate_mirror(s_display_srm_client, &cfg);
   if (ret != ESP_OK) {
     static bool warned = false;
@@ -153,8 +219,12 @@ static bool ppa_rotate_display_buf(const void *src, void *dst, int32_t w, int32_
       ESP_LOGW(TAG, "PPA display rotation unavailable (err=%d), using SW fallback", ret);
       warned = true;
     }
+    return false;
   }
-  return ret == ESP_OK;
+  // Invalidate the freshly written output so the subsequent panel push does not
+  // read stale cache lines (root cause of the color flicker + tremor).
+  esp_cache_msync(dst, aligned_out_bytes, ESP_CACHE_MSYNC_FLAG_DIR_M2C);
+  return true;
 }
 #endif  // USE_LVGL_PPA
 
@@ -308,10 +378,18 @@ void LvglComponent::esphome_lvgl_init() {
     srm_cfg.oper_type = PPA_OPERATION_SRM;
     srm_cfg.max_pending_trans_num = 1;
     srm_cfg.data_burst_length = PPA_DATA_BURST_LENGTH_64;
-    if (ppa_register_client(&srm_cfg, &s_display_srm_client) == ESP_OK) {
-      ESP_LOGI(TAG, "PPA display rotation SRM client registered");
+    esp_err_t srm_ret = ppa_register_client(&srm_cfg, &s_display_srm_client);
+    if (srm_ret == ESP_OK) {
+      ESP_LOGI(TAG, "PPA display rotation SRM client registered (HW rotation active)");
     } else {
-      ESP_LOGW(TAG, "PPA display rotation SRM client failed, SW rotation will be used");
+      // Not silent: this is the difference between HW rotation (0% CPU) and the
+      // SW fallback loops (high CPU). On the Tab5 / ESP32-P4 rev v1.0 this is
+      // typically chip-revision gating in IDF, not a hardware defect.
+      ESP_LOGE(TAG,
+               "PPA SRM client registration FAILED (err=%d/%s) -> display rotation will run on the "
+               "CPU. This is an ESP-IDF/sdkconfig chip-revision gating issue (CONFIG_ESP32P4_REV_MIN), "
+               "not this code. Known-good: ESP-IDF 5.5.2 / platform 55.03.35.",
+               srm_ret, esp_err_to_name(srm_ret));
       s_display_srm_client = nullptr;
     }
   }
@@ -391,7 +469,8 @@ void LvglComponent::draw_buffer_(const lv_area_t *area, lv_color_data *ptr) {
   // Try PPA hardware rotation first (zero CPU cost, ~10x faster than SW loops).
   // Falls back to software automatically if PPA rejects the operation.
   if (s_display_srm_client != nullptr && this->rotation != display::DISPLAY_ROTATION_0_DEGREES) {
-    if (ppa_rotate_display_buf(ptr, this->rotate_buf_, width, height, this->rotation)) {
+    if (ppa_rotate_display_buf(ptr, this->rotate_buf_, width, height, this->rotation, this->buf_bytes_,
+                               this->buf_bytes_)) {
       // dst already points to rotate_buf_ (initialized above)
       // Coordinate update: identical geometry to the software path
       switch (this->rotation) {
@@ -421,6 +500,30 @@ void LvglComponent::draw_buffer_(const lv_area_t *area, lv_color_data *ptr) {
       return;
     }
     // PPA refused this op → fall through to software rotation below.
+  }
+  // Loud, one-time diagnostic: if PPA is compiled in and we are actually
+  // rotating but the rotation is running on the CPU (SW loops below), the
+  // hardware accelerator is NOT being used. This is the "no silent CPU
+  // fallback" requirement: on a board where ppa_register_client() failed
+  // (e.g. chip-revision gating in sdkconfig/IDF), the user must SEE it in the
+  // boot log instead of silently paying the CPU cost.
+  if (this->rotation != display::DISPLAY_ROTATION_0_DEGREES) {
+    static bool sw_rotation_reported = false;
+    if (!sw_rotation_reported) {
+      sw_rotation_reported = true;
+      if (s_display_srm_client == nullptr) {
+        ESP_LOGE(TAG,
+                 "Display rotation is running on the CPU: PPA SRM client is NOT registered. "
+                 "The HW accelerator is unused and CPU load will be high. This is almost always "
+                 "ESP-IDF chip-revision gating (CONFIG_ESP32P4_REV_MIN) refusing PPA on this "
+                 "silicon/IDF combo — fix it in the YAML sdkconfig, not here. A known-good combo "
+                 "is ESP-IDF 5.5.2 / platform 55.03.35 (the Waveshare config).");
+      } else {
+        ESP_LOGE(TAG,
+                 "Display rotation fell back to CPU: PPA SRM client is registered but rejected the "
+                 "operation (check buffer cache-line alignment and dimensions).");
+      }
+    }
   }
 #endif  // USE_LVGL_PPA
 
@@ -537,9 +640,9 @@ void LvglComponent::flush_cb_(lv_display_t *disp_drv, const lv_area_t *area, uin
     return;
   }
 #endif
-  uint64_t t0 = esp_timer_get_time();
+  uint64_t t0 = lvgl_now_us();
   this->draw_buffer_(area, reinterpret_cast<lv_color_data *>(color_p));
-  uint64_t dt = esp_timer_get_time() - t0;
+  uint64_t dt = lvgl_now_us() - t0;
   // Track flush wait time so loop() can subtract it when computing
   // CPU%% — the synchronous DMA push isn't real CPU work.
   this->perf_flush_us_ += dt;
@@ -605,6 +708,9 @@ LVTouchListener::LVTouchListener(uint16_t long_press_time, uint16_t long_press_r
     if (l->touch_pressed_) {
       data->point.x = l->touch_point_.x;
       data->point.y = l->touch_point_.y;
+      // Rotate the touch into LVGL's logical space when using `lvgl: rotation:`
+      // (no-op for display: rotation or rotation 0).
+      l->get_parent()->rotate_touch_point(data->point.x, data->point.y);
       data->state = LV_INDEV_STATE_PRESSED;
     } else {
       data->state = LV_INDEV_STATE_RELEASED;
@@ -875,8 +981,18 @@ void LvglComponent::setup() {
   // cater for displays with dimensions that don't divide by the required rounding
   this->width_ = display->get_width();
   this->height_ = display->get_height();
-  auto width = (display->get_width() + rounding - 1) / rounding * rounding;
-  auto height = (display->get_height() + rounding - 1) / rounding * rounding;
+  // When rotation is set via `lvgl: rotation:` (not the display: component), the
+  // display itself is NOT rotated, so get_width()/get_height() return the
+  // *physical* panel dimensions. For a 90/270 rotation LVGL must render at the
+  // swapped logical size, so that after we rotate the rendered frame it matches
+  // the physical panel. (For `display: rotation:`, get_width()/get_height()
+  // already reflect the swap, so we must not swap again.)
+  if (this->rotation_configured_ && (this->rotation == display::DISPLAY_ROTATION_90_DEGREES ||
+                                     this->rotation == display::DISPLAY_ROTATION_270_DEGREES)) {
+    std::swap(this->width_, this->height_);
+  }
+  auto width = (this->width_ + rounding - 1) / rounding * rounding;
+  auto height = (this->height_ + rounding - 1) / rounding * rounding;
   auto frac = this->buffer_frac_;
   if (frac == 0)
     frac = 1;
@@ -894,6 +1010,57 @@ void LvglComponent::setup() {
   // ('out.buffer addr or out.buffer_size not aligned to cache line size').
   constexpr size_t BUF_SIZE_ALIGN = 128;
   buf_bytes = (buf_bytes + BUF_SIZE_ALIGN - 1) & ~(BUF_SIZE_ALIGN - 1);
+
+  // --- Internal-SRAM rotation pipeline (opt-in) ---------------------------
+  // On PSRAM-bandwidth-limited ESP32-P4 silicon (e.g. rev v1.0) the bottleneck
+  // is not the PPA or the CPU but the PSRAM bus. A rotated frame whose draw and
+  // rotate buffers live in PSRAM costs ~5 PSRAM round-trips (render write, PPA
+  // read+write, draw_pixels_at read+write), which starves the DSI scan-out and
+  // the camera. If we instead shrink those buffers so all three (draw_buf_,
+  // draw_buf2_, rotate_buf_) fit in internal SRAM — a separate, ~10x faster bus
+  // — the whole render+rotate pipeline stays on-chip and only the final panel
+  // push touches PSRAM (1 pass instead of 5). The trade is more, smaller
+  // partial flushes, which is a net win precisely when PSRAM is the bottleneck.
+  // Counter-intuitive vs. the usual "bigger buffer = faster" rule, which only
+  // holds when PSRAM bandwidth is abundant.
+#if defined(USE_LVGL_PPA) && defined(USE_ESP32)
+  {
+    display::DisplayRotation eff_rot =
+        this->rotation_configured_ ? this->rotation : display->get_rotation();
+    if (this->rotation_internal_sram_ && this->full_refresh_) {
+      ESP_LOGW(TAG,
+               "rotation_buffers_internal is ignored with full_refresh: true (full refresh needs a "
+               "full-screen buffer). Use partial refresh to keep the rotation pipeline in SRAM.");
+    }
+    if (this->rotation_internal_sram_ && !this->full_refresh_ &&
+        eff_rot != display::DISPLAY_ROTATION_0_DEGREES) {
+      size_t free_int = heap_caps_get_free_size(MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
+      // Three buffers split the budget; keep ~30% internal-SRAM headroom for
+      // the rest of the app (DMA descriptors, stacks, other components).
+      size_t per_buf = (free_int * 7 / 10) / 3;
+      per_buf &= ~static_cast<size_t>(BUF_SIZE_ALIGN - 1);
+      // Need at least a few rounded rows for the rotation math to be useful.
+      size_t min_buf = static_cast<size_t>(width) * this->draw_rounding * BYTES_PER_PIXEL;
+      min_buf = (min_buf + BUF_SIZE_ALIGN - 1) & ~(BUF_SIZE_ALIGN - 1);
+      if (per_buf >= min_buf && per_buf < buf_bytes) {
+        size_t full_bytes = static_cast<size_t>(width) * height * BYTES_PER_PIXEL;
+        buf_bytes = per_buf;
+        frac = (full_bytes + buf_bytes - 1) / buf_bytes;
+        ESP_LOGI(TAG,
+                 "Rotation internal-SRAM pipeline ON: buffers shrunk to %zu B (~1/%zu screen), "
+                 "free internal SRAM=%zu B. Render+rotate stay on-chip; only the panel push hits PSRAM.",
+                 buf_bytes, static_cast<size_t>(frac), free_int);
+      } else {
+        ESP_LOGW(TAG,
+                 "Rotation internal-SRAM pipeline requested but not applied: internal-SRAM budget "
+                 "%zu B/buf can't beat the current %zu B buffer (free internal=%zu B). Falling back "
+                 "to normal allocation (buffers may land in PSRAM).",
+                 per_buf, buf_bytes, free_int);
+      }
+    }
+  }
+#endif
+
   void *buffer = nullptr;
 
   // Helper lambda to allocate an aligned DMA-capable buffer.
@@ -964,7 +1131,15 @@ void LvglComponent::setup() {
     // the task rotates+pushes frame N. The task does NO LVGL calls; the main
     // loop / flush_wait_cb_ call lv_display_flush_ready, so there is no thread
     // race. Falls back to the synchronous single-buffer path on any failure.
-    this->draw_buf2_ = static_cast<uint8_t *>(alloc_draw_buf(buf_bytes));
+    //
+    // TEMPORARILY DISABLED: the async flush task (pinned to core 1) crashed with
+    // a garbage source pointer inside esp_cache_msync (Core 1 Load access fault).
+    // Force the synchronous single-buffer path to isolate the async handoff.
+    // If synchronous rotation is stable, the bug is in the double-buffer /
+    // flush-task pipeline, not in the PPA rotate itself.
+    constexpr bool ENABLE_ASYNC_ROTATION = false;
+    this->draw_buf2_ =
+        ENABLE_ASYNC_ROTATION ? static_cast<uint8_t *>(alloc_draw_buf(buf_bytes)) : nullptr;
     if (this->draw_buf2_ != nullptr) {
       this->flush_queue_ = xQueueCreate(2, sizeof(FlushJob));
       this->flush_done_sem_ = xSemaphoreCreateCounting(8, 0);
@@ -991,6 +1166,14 @@ void LvglComponent::setup() {
         ESP_LOGW(TAG, "Pipelined flush unavailable -> synchronous rotation (lower FPS)");
       }
     }
+    // Report where the rotation pipeline buffers actually landed. This is the
+    // proof of whether the internal-SRAM optimization took effect: if any of
+    // these say PSRAM, that buffer's traffic still competes with the DSI/camera.
+    auto mem_of = [](const void *p) -> const char * {
+      return p == nullptr ? "none" : (esp_ptr_internal(p) ? "internal SRAM" : "PSRAM");
+    };
+    ESP_LOGI(TAG, "Rotation buffers: draw_buf=%s, draw_buf2=%s, rotate_buf=%s (%zu B each)",
+             mem_of(this->draw_buf_), mem_of(this->draw_buf2_), mem_of(this->rotate_buf_), buf_bytes);
 #endif
   }
   if (this->draw_start_callback_ != nullptr) {
@@ -1082,9 +1265,9 @@ void LvglComponent::loop() {
     // DMA wait into perf_flush_us_; subtract it so the reported CPU%%
     // counts only real render work (matches lvgl_camera_display's
     // approach: cpu_time / frame_interval).
-    uint64_t t0 = esp_timer_get_time();
+    uint64_t t0 = lvgl_now_us();
     lv_timer_handler();
-    uint64_t t1 = esp_timer_get_time();
+    uint64_t t1 = lvgl_now_us();
     this->perf_busy_us_ += (t1 - t0);
     uint64_t now_us = t1;
     if (this->perf_window_start_us_ == 0)

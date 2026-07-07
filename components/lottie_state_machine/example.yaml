@@ -1,23 +1,23 @@
 # =============================================================================
-# Exemple complet : Lottie State Machine pour ESPHome
+# Complete example: Lottie State Machine for ESPHome
 # =============================================================================
 #
-# Fichier : AIrobo2.json (700x700, 480 frames, 60fps)
-# Le fichier a "op": 29 à la racine — sans state machine, seul l'état
-# "idle" (frames 0-29) est joué. La state machine permet de jouer
-# les 6 états définis par les marqueurs du fichier Lottie.
+# File: AIrobo2.json (700x700, 480 frames, 60fps)
+# The file has "op": 29 at the root — without a state machine, only the
+# "idle" state (frames 0-29) is played. The state machine allows playing
+# the 6 states defined by the markers in the Lottie file.
 #
-# Marqueurs extraits du JSON :
-#   idle     : frames 0-29    (0.5s)  → robot calme, respire
-#   yes      : frames 31-105  (1.2s)  → robot hoche la tête (oui)
-#   no       : frames 106-180 (1.2s)  → robot secoue la tête (non)
-#   alert    : frames 181-270 (1.5s)  → robot en alerte
-#   thinking : frames 271-390 (2.0s)  → robot réfléchit
-#   jump     : frames 391-479 (1.5s)  → robot saute
+# Markers extracted from the JSON:
+#   idle     : frames 0-29    (0.5s)  → robot calm, breathing
+#   yes      : frames 31-105  (1.2s)  → robot nods its head (yes)
+#   no       : frames 106-180 (1.2s)  → robot shakes its head (no)
+#   alert    : frames 181-270 (1.5s)  → robot on alert
+#   thinking : frames 271-390 (2.0s)  → robot thinking
+#   jump     : frames 391-479 (1.5s)  → robot jumps
 #
 # =============================================================================
 
-# --- 1. Composant externe ---
+# --- 1. External component ---
 external_components:
   - source:
       type: git
@@ -25,10 +25,10 @@ external_components:
       ref: claude/jolly-lamport-ERZOC
     components: [lvgl, image, font, lottie_state_machine]
 
-# --- 2. Widget Lottie dans LVGL ---
-# Le fichier AIrobo2.json est sur la carte SD.
-# auto_start: false car c'est la state machine qui contrôle la lecture.
-# loop: false car chaque état définit son propre comportement de boucle.
+# --- 2. Lottie widget in LVGL ---
+# The AIrobo2.json file is on the SD card.
+# auto_start: false because the state machine controls playback.
+# loop: false because each state defines its own loop behavior.
 
 lvgl:
   pages:
@@ -44,10 +44,10 @@ lvgl:
             align: CENTER
 
 # --- 3. State Machine ---
-# Les 6 états correspondent aux marqueurs du fichier Lottie.
-# Chaque segment est défini par [frame_début, frame_fin].
-# loop: true = l'animation boucle sur ce segment
-# loop: false = l'animation joue une fois puis s'arrête
+# The 6 states correspond to the markers in the Lottie file.
+# Each segment is defined by [start_frame, end_frame].
+# loop: true = the animation loops over this segment
+# loop: false = the animation plays once then stops
 
 lottie_state_machine:
   id: robot_sm
@@ -74,51 +74,51 @@ lottie_state_machine:
       segment: [391, 479]
       loop: false
 
-# --- 4. Utilisation dans les automations ESPHome ---
+# --- 4. Usage in ESPHome automations ---
 #
-# IMPORTANT : ne PAS créer de nouveaux sensors/text_sensors ici !
-# Ajoutez les actions dans vos sensors EXISTANTS.
+# IMPORTANT: do NOT create new sensors/text_sensors here!
+# Add the actions to your EXISTING sensors.
 #
-# Exemples d'utilisation avec chaque état :
+# Usage examples for each state:
 #
-#   # Notification reçue → robot en alerte
+#   # Notification received → robot on alert
 #   - lottie_state_machine.set_state:
 #       id: robot_sm
 #       state: alert
 #
-#   # Voice assistant activé → robot réfléchit
+#   # Voice assistant activated → robot thinking
 #   - lottie_state_machine.set_state:
 #       id: robot_sm
 #       state: thinking
 #
-#   # Commande vocale réussie → robot dit oui
+#   # Voice command succeeded → robot says yes
 #   - lottie_state_machine.set_state:
 #       id: robot_sm
 #       state: yes
 #
-#   # Commande vocale échouée → robot dit non
+#   # Voice command failed → robot says no
 #   - lottie_state_machine.set_state:
 #       id: robot_sm
 #       state: no
 #
-#   # Événement spécial → robot saute de joie
+#   # Special event → robot jumps for joy
 #   - lottie_state_machine.set_state:
 #       id: robot_sm
 #       state: jump
 #
-#   # Retour au calme → robot idle
+#   # Back to calm → robot idle
 #   - lottie_state_machine.set_state:
 #       id: robot_sm
 #       state: idle
 #
-# --- 5. Intégration dans le sensor notification existant ---
+# --- 5. Integration into the existing notification sensor ---
 #
 #   - platform: homeassistant
-#     id: notification_text            # ← celui qui EXISTE DÉJÀ
+#     id: notification_text            # ← the one that ALREADY EXISTS
 #     entity_id: ${notifications}
 #     on_value:
 #       then:
-#         # ... vos actions existantes ...
+#         # ... your existing actions ...
 #         - if:
 #             condition:
 #               lambda: 'return id(notification);'
@@ -133,7 +133,7 @@ lottie_state_machine:
 #                   id: robot_sm
 #                   state: idle
 #
-# --- 6. Intégration dans le voice assistant existant ---
+# --- 6. Integration into the existing voice assistant ---
 #
 #   voice_assistant:
 #     on_wake_word_detected:
@@ -153,11 +153,11 @@ lottie_state_machine:
 #           state: idle
 #       - lvgl.page.show: page_home
 #
-# --- 7. Automatisation HA (exemples) ---
+# --- 7. HA automation (examples) ---
 #
-# Dans automations.yaml de Home Assistant :
+# In Home Assistant's automations.yaml:
 #
-#   - alias: "Robot alerte quand porte ouvre"
+#   - alias: "Robot alert when door opens"
 #     trigger:
 #       - platform: state
 #         entity_id: binary_sensor.porte_entree
@@ -169,7 +169,7 @@ lottie_state_machine:
 #         data:
 #           option: "alert"
 #
-#   - alias: "Robot saute quand objectif atteint"
+#   - alias: "Robot jumps when goal reached"
 #     trigger:
 #       - platform: numeric_state
 #         entity_id: sensor.abonnes_youtube
@@ -181,7 +181,7 @@ lottie_state_machine:
 #         data:
 #           option: "jump"
 #
-#   - alias: "Robot idle après 30 secondes"
+#   - alias: "Robot idle after 30 seconds"
 #     trigger:
 #       - platform: state
 #         entity_id: select.habbit_desk_pro_robot_state

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation provides full support for the LVGL v9.4 Window widget (`lv_win`) in ESPHome. The window widget creates modal windows with a title bar, content area, and optional header buttons.
+This implementation provides full support for the LVGL v9.5 Window widget (`lv_win`) in ESPHome. The window widget creates modal windows with a title bar, content area, and optional header buttons.
 
 ## File Location
 
@@ -10,9 +10,9 @@ This implementation provides full support for the LVGL v9.4 Window widget (`lv_w
 
 ## Implementation Details
 
-### LVGL v9.4 API Support
+### LVGL v9.5 API Support
 
-The implementation uses the following LVGL v9.4 API functions:
+The implementation uses the following LVGL v9.5 API functions:
 
 1. **`lv_win_create(parent)`** - Creates the window widget
 2. **`lv_win_add_title(win, title)`** - Sets the window title
@@ -401,5 +401,5 @@ on_button_press:
 
 ## References
 
-- LVGL v9.4 Window Documentation: https://docs.lvgl.io/9.4/widgets/win.html
+- LVGL v9.5 Window Documentation: https://docs.lvgl.io/9.5/widgets/win.html
 - ESPHome LVGL Integration: https://esphome.io/components/lvgl/

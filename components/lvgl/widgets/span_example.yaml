@@ -1,5 +1,5 @@
 # ESPHome LVGL Spangroup Widget Example
-# Demonstrates rich text formatting in LVGL v9.4
+# Demonstrates rich text formatting in LVGL v9.5
 
 lvgl:
   displays:
@@ -18,7 +18,7 @@ lvgl:
                   - text: "Welcome to "
                     text_color: 0x000000
                     text_font: roboto_16
-                  - text: "LVGL v9.4"
+                  - text: "LVGL v9.5"
                     text_color: 0x2196F3
                     text_font: roboto_16_bold
                   - text: " on ESPHome!"

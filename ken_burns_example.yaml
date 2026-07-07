@@ -33,7 +33,7 @@ substitutions:
   display_w: "1024"
   display_h: "600"
 
-  # Votre image JPG 1024×600 — remplacez par votre nom de fichier
+  # Your 1024×600 JPG image — replace with your filename
   ken_burns_image: "votre_image.jpg"
 
   # Ken Burns animation parameters
@@ -98,9 +98,9 @@ display:
 # --- Image ---
 # lvgl_rgb888_demo.png is 1280×800 — already in the repo root.
 image:
-  # Image source 1024×600 upscalée à 1400×820 à la compilation.
-  # Nécessaire : à 1.0× l'image couvre pile l'écran → pas de marge pour bouger.
-  # Avec 1400×820, à 1.4× zoom la zone virtuelle fait 1960×1148 → 936px de pan dispo.
+  # Source image 1024×600 upscaled to 1400×820 at compile time.
+  # Required: at 1.0× the image exactly covers the screen → no margin to move.
+  # With 1400×820, at 1.4× zoom the virtual area is 1960×1148 → 936px of pan available.
   - file: ${ken_burns_image}
     id: img_landscape
     type: RGB565
@@ -165,8 +165,8 @@ interval:
 
           // Phase 0: zoom in, pan upper-left → center
           // Phase 1: zoom out, pan center → lower-right (reversed)
-          const int px0 = 180, py0 = 120;   // start pivot : haut-gauche (image 1400×820)
-          const int px1 = 1220, py1 = 700;  // end pivot   : bas-droite
+          const int px0 = 180, py0 = 120;   // start pivot : top-left (1400×820 image)
+          const int px1 = 1220, py1 = 700;  // end pivot   : bottom-right
 
           if(phase == 0) {
               scale_val = (int)(zoom_a + (zoom_b - zoom_a) * t);
@@ -237,10 +237,10 @@ lvgl:
                   id: lv_kb_image
                   src: img_landscape
                   align: CENTER
-                  # Initial state: no zoom, pivot au centre de l'image 1400×820
-                  scale: 1.0          # 1.0 = 100% ; lambdas utilisent lv_image_set_scale() en entiers LVGL
-                  pivot_x: 700        # centre de 1400px
-                  pivot_y: 410        # centre de 820px
+                  # Initial state: no zoom, pivot at the center of the 1400×820 image
+                  scale: 1.0          # 1.0 = 100% ; lambdas use lv_image_set_scale() with LVGL integers
+                  pivot_x: 700        # center of 1400px
+                  pivot_y: 410        # center of 820px
 
         # HUD overlay (drawn on top of the Ken Burns layer)
         - obj:

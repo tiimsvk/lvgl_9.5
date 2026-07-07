@@ -1,5 +1,5 @@
 # LVGL Calendar Widget Example
-# Demonstrates the LVGL v9.4 Calendar widget with header navigation
+# Demonstrates the LVGL v9.5 Calendar widget with header navigation
 # Reference: https://docs.lvgl.io/master/widgets/calendar.html
 
 lvgl:

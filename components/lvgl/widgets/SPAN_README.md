@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation provides full support for the LVGL v9.4 Spangroup widget (`lv_spangroup`) in ESPHome. The Spangroup widget displays text with multiple styles (fonts, colors, decorations) within a single label, enabling rich text formatting.
+This implementation provides full support for the LVGL v9.5 Spangroup widget (`lv_spangroup`) in ESPHome. The Spangroup widget displays text with multiple styles (fonts, colors, decorations) within a single label, enabling rich text formatting.
 
 ## File Location
 
@@ -14,9 +14,9 @@ Spangroup allows you to combine multiple text fragments (spans) with different s
 
 ## Implementation Details
 
-### LVGL v9.4 API Support
+### LVGL v9.5 API Support
 
-The implementation uses the following LVGL v9.4 API functions:
+The implementation uses the following LVGL v9.5 API functions:
 
 1. **`lv_spangroup_create(parent)`** - Creates the spangroup widget
 2. **`lv_spangroup_set_mode(obj, mode)`** - Sets overflow mode
@@ -438,7 +438,7 @@ lvgl:
 
 ## References
 
-- [LVGL v9.4 Spangroup Documentation](https://docs.lvgl.io/9.4/details/widgets/spangroup.html)
+- [LVGL v9.5 Spangroup Documentation](https://docs.lvgl.io/9.5/details/widgets/spangroup.html)
 
 ---
 

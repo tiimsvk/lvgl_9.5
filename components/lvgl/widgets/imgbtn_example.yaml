@@ -1,5 +1,5 @@
 # ESPHome LVGL Image Button Widget Example
-# Demonstrates multi-state image buttons in LVGL v9.4
+# Demonstrates multi-state image buttons in LVGL v9.5
 
 # Define images for button states
 image:

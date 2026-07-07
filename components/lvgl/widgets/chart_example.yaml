@@ -1,6 +1,6 @@
 # ESPHome LVGL Chart Widget Examples
 # =============================================================================
-# LVGL v9.4 Chart Widget - Complete Examples
+# LVGL v9.5 Chart Widget - Complete Examples
 #
 # Chart Types: LINE, BAR, SCATTER
 # Update Modes: SHIFT (sliding window), CIRCULAR (ECG-style)

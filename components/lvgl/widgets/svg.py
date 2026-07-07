@@ -1,7 +1,7 @@
 """
-LVGL 9.4 SVG Widget for ESPHome
+LVGL 9.5 SVG Widget for ESPHome
 
-Renders static SVG images using the ThorVG vector engine built into LVGL 9.4.
+Renders static SVG images using the ThorVG vector engine built into LVGL 9.5.
 The SVG is rasterised once (at the requested size) in a FreeRTOS task with a
 64 KB PSRAM stack, then displayed via an lv_canvas widget.
 

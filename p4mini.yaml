@@ -20,7 +20,7 @@ substitutions:
   DISPLAY_H: "480"
 
   
-    # URLs des stations de radio"
+    # Radio station URLs"
   radio_fun_url: " https://icecast.funradio.fr/fun-1-44-128?listen=webGJmqBU59boQ7rZDjrGO5e4"
   radio_skyrock_url: "http://icecast.skyrock.net/s/natio_mp3_128k"
   radio_sud_url: "https://live.sudradio.fr/sudradio-mp3-128"
@@ -150,7 +150,7 @@ esp32:
       DCONFIG_USE_AUDIO_AAC_SUPPORT: "y"
       DCONFIG_ESP_JPG_DECODE_ENABLE: "y"
       DCONFIG_ESPHOME_ENABLE_PNGLE: "1"
-      CONFIG_SPIRAM_SPEED_200M: "y"  # ← NOUVEAU: 200 MHz au lieu de défaut
+      CONFIG_SPIRAM_SPEED_200M: "y"  # ← NEW: 200 MHz instead of default
       CONFIG_SPIRAM_SPEED: "200"
 
 
@@ -270,7 +270,7 @@ esp_video:
   use_heap_allocator: true
 
 # ============================================================================
-# Caméra MIPI-CSI 
+# MIPI-CSI Camera
 # ============================================================================
 
 esp_cam_sensor:
@@ -286,11 +286,11 @@ esp_cam_sensor:
   mirror_y: false
   crop_offset_x: false
   ppa_enabled: true
-  #output_width: 600    # Largeur après rotation 270°
-  #output_height: 460   # Hauteur après rotation 270°  
+  #output_width: 600    # Width after 270° rotation
+  #output_height: 460   # Height after 270° rotation
 
 # ============================================================================
-# Display LVGL avec caméra
+# LVGL Display with camera
 # ============================================================================           
 
 lvgl_camera_display:
@@ -304,7 +304,7 @@ lvgl_camera_display:
          
 
 # ============================================================================
-# Detection de visages + reconnaissance (independant)
+# Face detection + recognition (independent)
 # ============================================================================
 
 #face_detection:
@@ -348,10 +348,10 @@ network_camera:
 pedestrian_detection:
   id: ped_detect
   camera_id: tab5_cam
-  canvas_id: camera_canvas       # ← Ajoutez juste ça
-  detection_interval: 4          # ← OK, garde comme ça
+  canvas_id: camera_canvas       # ← Just add this
+  detection_interval: 4          # ← OK, keep it like this
   draw_enabled: true
-  model_location: sdcard               # ← Économise la flash !
+  model_location: sdcard               # ← Saves flash!
   model_path: "/sdcard/pedestrian_detect"
 
 
@@ -374,10 +374,10 @@ pedestrian_detection:
   #draw_enabled: true 
   #on_object_detected:
     #- lambda: |-
-        #ESP_LOGI("main", "Objects détectés: %d", object_count);       
+        #ESP_LOGI("main", "Objects detected: %d", object_count);
 
 # ============================================================================
-# Serveur Web HTTP (streaming MJPEG + snapshots)
+# HTTP Web Server (MJPEG streaming + snapshots)
 # ============================================================================
 #camera_web_server:
   #camera_id: tab5_cam
@@ -733,7 +733,7 @@ globals:
   - id: current_radio_station
     type: int
     restore_value: true
-    initial_value: '0'  # Commence avec Fun Radio (0=Fun, 1=Skyrock, 2=Sud, 3=RTL2)  
+    initial_value: '0'  # Starts with Fun Radio (0=Fun, 1=Skyrock, 2=Sud, 3=RTL2)
 
   - id: display_timeout
     type: int
@@ -747,7 +747,7 @@ globals:
   - id: timer_running
     type: bool
     restore_value: no
-    initial_value: 'false' # Indique si le timer est en cours d'exécution    
+    initial_value: 'false' # Indicates whether the timer is currently running
 
   - id: timer_started
     type: bool
@@ -864,7 +864,7 @@ globals:
   - id: volume_before_mute
     type: float
     initial_value: '0.5'
-  # Nouveau global pour empêcher le sleep pendant les interactions
+  # New global to prevent sleep during interactions
   - id: touch_active
     type: bool
     initial_value: 'false'
@@ -972,7 +972,7 @@ number:
 script:
   - id: update_clock
     then:
-      # Mise à jour de l'heure (format HH:MM)
+      # Update the time (HH:MM format)
       - lvgl.label.update:
           id: time_label
           text: !lambda |-
@@ -980,17 +980,17 @@ script:
             return str_sprintf("%02d:%02d", time.hour, time.minute);
 
 
-      # Mise à jour de l'aiguille des secondes
+      # Update the seconds hand
       - lvgl.indicator.update:
           id: second_hand
           value: !lambda return id(homeassistant_time).now().second;
       
-      # Mise à jour de l'aiguille des minutes  
+      # Update the minutes hand
       - lvgl.indicator.update:
           id: minute_hand
           value: !lambda return id(homeassistant_time).now().minute;
       
-      # Mise à jour de l'aiguille des heures
+      # Update the hours hand
       - lvgl.indicator.update:
           id: hour_hand
           value: !lambda |-
@@ -999,7 +999,7 @@ script:
             int minute = time.minute;
             return (hour * 60) + minute;            
       
-      # Mise à jour de la date avec jour de la semaine (format: "Tuesday, Apr 23")
+      # Update the date with day of the week (format: "Tuesday, Apr 23")
       - lvgl.label.update:
           id: date_label
           text: !lambda |-
@@ -1177,7 +1177,7 @@ text_sensor:
     name: "Camera Status Info"
     id: camera_status_info
     internal: true
-    update_interval: never  # Désactivé par défaut
+    update_interval: never  # Disabled by default
     lambda: |-
       static char buf[100];
       snprintf(buf, sizeof(buf), "%dx%d | %s | Buffer: %d KB",
@@ -1951,7 +1951,7 @@ font:
       "\U000F02E9",#Gallery
       "\U000F07D1",#home-automation
       "\U000F18DE",#ceiling-light-multiple-outline
-      "\U000F0450",# Icône rafraîchir
+      "\U000F0450",# Refresh icon
       "\U000F061A", # illumination (lux)
 
                       
@@ -2215,7 +2215,7 @@ lvgl:
               #if (canvas != nullptr) {
                 #id(camera_display).configure_canvas(canvas);
                 #canvas_configured = true;
-                #ESP_LOGI("lvgl", "Canvas ov02c10 configuré");
+                #ESP_LOGI("lvgl", "Canvas ov02c10 configured");
               #}
             #}
         
@@ -2229,7 +2229,7 @@ lvgl:
 
   style_definitions:
     - id: round_mask
-      radius: 50%  # Crée un cercle parfait
+      radius: 50%  # Creates a perfect circle
       clip_corner: true
 
     - id: menu_button
@@ -2304,7 +2304,7 @@ lvgl:
       bg_opa: TRANSP
       border_opa: TRANSP
       radius: 0
-      text_color: 0xCCCCCC  # Gris clair pour le texte
+      text_color: 0xCCCCCC  # Light gray for the text
       width: 100%
       height: 100%
 
@@ -2423,7 +2423,7 @@ lvgl:
                 id: update_wallpaper
                 src: peaceful
         widgets:        
-          # Fond d'écran sombre
+          # Dark wallpaper
           - obj:
               id: background
               width: 800
@@ -2439,8 +2439,8 @@ lvgl:
               #id: wallpaper
               #width: 1280
               #height: 720
-              #align: CENTER  # Centre automatiquement l'objet
-              #bg_opa: COVER  # Couvre tout l'objet avec l'image
+              #align: CENTER  # Automatically centers the object
+              #bg_opa: COVER  # Covers the entire object with the image
               #border_width: 0
               #radius: 0              
 
@@ -2515,8 +2515,8 @@ lvgl:
               y: 85
               text_color: 0x00AAAA              
 
-          # Boutons menu gauche
-          # Bouton Settings
+          # Left menu buttons
+          # Settings button
           - button:
               id: btn_settings
               width: 150
@@ -2609,7 +2609,7 @@ lvgl:
                   - lvgl.page.show: camera_page 
 
                       
-          # Bouton Alarm
+          # Alarm button
           - button:
               id: btn_alarm
               width: 150
@@ -2678,7 +2678,7 @@ lvgl:
                 
 
 
-          # Bouton Thermostat
+          # Thermostat button
           - button:
               id: btn_thermostat
               width: 150
@@ -2705,7 +2705,7 @@ lvgl:
                 then:
                   - lvgl.page.show: thermostat_page
 
-          # Bouton Media Player
+          # Media Player button
           - button:
               id: btn_player
               width: 150
@@ -2869,7 +2869,7 @@ lvgl:
         widgets:
 
           # ==============================================================
-          # CANVAS - Direct, sans conteneur
+          # CANVAS - Direct, without container
           # ==============================================================
           - canvas:
               id: camera_canvas
@@ -2881,7 +2881,7 @@ lvgl:
               #transform_angle: 270
 
           # ==============================================================
-          # BOUTONS DE CONTRÔLE
+          # CONTROL BUTTONS
           # ==============================================================
           - button:
               id: camera_back
@@ -3030,7 +3030,7 @@ lvgl:
                     text_color: color_blue
                     text: "Sleep mode"
                 
-                # Bouton moins (-)
+                # Minus button (-)
                 - obj:
                     id: minus_button_main
                     x: 155
@@ -3098,7 +3098,7 @@ lvgl:
                                       text_color: color_misty_blue
                                       text: "-"
                 
-                # Affichage valeur actuelle
+                # Current value display
                 - label:
                     id: current_timeout_value
                     x: 225
@@ -3112,7 +3112,7 @@ lvgl:
                       if (timeout == -1) return "OFF";
                       return (std::to_string(timeout) + "s").c_str();
                 
-                # Bouton plus (+)
+                # Plus button (+)
                 - obj:
                     id: plus_button_main
                     x: 290
@@ -3364,14 +3364,14 @@ lvgl:
               border_color: white
               radius: 140
               widgets:
-              # Cadran principal avec graduation
+              # Main dial with graduations
               - meter:
                   height: 100%
                   width: 100%
                   align: center
                   bg_color: Black
                   scales:
-                    # Graduation des minutes (petites marques)
+                    # Minutes graduations (small ticks)
                     - ticks:
                         width: 1
                         count: 60
@@ -3382,7 +3382,7 @@ lvgl:
                       angle_range: 360
                       rotation: 270
                     
-                    # Graduation des heures (grandes marques)
+                    # Hours graduations (large ticks)
                     - ticks:
                         width: 2
                         count: 12
@@ -3393,7 +3393,7 @@ lvgl:
                       angle_range: 360
                       rotation: 270
                       
-                    # Échelle spécifique pour l'aiguille des heures (0-720 pour 12h * 60min)
+                    # Specific scale for the hours hand (0-720 for 12h * 60min)
                     - range_from: 0
                       range_to: 720
                       angle_range: 360
@@ -3405,7 +3405,7 @@ lvgl:
                             color: white
                             r_mod: -45
                             
-                    # Aiguille des minutes
+                    # Minutes hand
                     - range_from: 0
                       range_to: 60
                       angle_range: 360
@@ -3417,7 +3417,7 @@ lvgl:
                             color: white
                             r_mod: -25
                             
-                    # Aiguille des secondes
+                    # Seconds hand
                     - range_from: 0
                       range_to: 60
                       angle_range: 360
@@ -3429,7 +3429,7 @@ lvgl:
                             color: red
                             r_mod: -15
 
-              # Chiffres des heures (12, 3, 6, 9)
+              # Hour numbers (12, 3, 6, 9)
               - label:
                   id: hour_12
                   text: "12"
@@ -3466,7 +3466,7 @@ lvgl:
                   text_font: roboto_20
                   text_color: white
 
-              # Autres chiffres des heures
+              # Other hour numbers
               - label:
                   id: hour_1
                   text: "1"
@@ -3539,7 +3539,7 @@ lvgl:
                   text_font: roboto_16
                   text_color: white
 
-              # Centre de la montre
+              # Watch center
               - obj:
                   height: 12
                   width: 12

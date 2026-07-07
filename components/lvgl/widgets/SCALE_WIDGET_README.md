@@ -1,8 +1,8 @@
-# LVGL v9.4 Scale Widget for ESPHome
+# LVGL v9.5 Scale Widget for ESPHome
 
 ## Overview
 
-The Scale widget is a versatile LVGL v9.4 component for displaying measurement scales in various orientations. It replaces the obsolete Meter widget from LVGL v8.x and provides more flexibility for creating gauges, thermometers, progress indicators, and other measurement displays.
+The Scale widget is a versatile LVGL v9.5 component for displaying measurement scales in various orientations. It replaces the obsolete Meter widget from LVGL v8.x and provides more flexibility for creating gauges, thermometers, progress indicators, and other measurement displays.
 
 **IMPORTANT**: The Scale widget only displays tick marks and labels (static). For animated gauges, combine Scale + Arc widgets.
 
@@ -458,7 +458,7 @@ lvgl.scale.section.update:
 
 If you're migrating from the LVGL v8.x meter widget:
 
-| Meter (v8.x) | Scale (v9.4) |
+| Meter (v8.x) | Scale (v9.5) |
 |--------------|--------------|
 | `lv_meter_create()` | `lv_scale_create()` + `lv_arc_create()` |
 | `lv_meter_set_scale_ticks()` | `ticks.count` configuration |
@@ -469,9 +469,9 @@ If you're migrating from the LVGL v8.x meter widget:
 
 ## API Reference
 
-### LVGL v9.4 Functions Used
+### LVGL v9.5 Functions Used
 
-The scale widget implementation uses these LVGL v9.4 API functions:
+The scale widget implementation uses these LVGL v9.5 API functions:
 
 - `lv_scale_create(parent)` - Create scale widget
 - `lv_scale_set_mode(scale, mode)` - Set scale orientation
@@ -531,6 +531,6 @@ The scale widget implementation uses these LVGL v9.4 API functions:
 
 ## References
 
-- [LVGL v9.4 Scale Documentation](https://docs.lvgl.io/9.4/details/widgets/scale.html)
+- [LVGL v9.5 Scale Documentation](https://docs.lvgl.io/9.5/details/widgets/scale.html)
 - [ESPHome LVGL Component](https://esphome.io/components/lvgl/index.html)
 - See `scale_example.yaml` for complete working examples

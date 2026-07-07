@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation provides full support for the LVGL v9.4 Menu widget (`lv_menu`) in ESPHome. The menu widget enables hierarchical navigation with multiple pages, headers, back buttons, and sidebar support.
+This implementation provides full support for the LVGL v9.5 Menu widget (`lv_menu`) in ESPHome. The menu widget enables hierarchical navigation with multiple pages, headers, back buttons, and sidebar support.
 
 ## File Location
 
@@ -10,9 +10,9 @@ This implementation provides full support for the LVGL v9.4 Menu widget (`lv_men
 
 ## Implementation Details
 
-### LVGL v9.4 API Support
+### LVGL v9.5 API Support
 
-The implementation uses the following LVGL v9.4 API functions:
+The implementation uses the following LVGL v9.5 API functions:
 
 1. **`lv_menu_create(parent)`** - Creates the menu widget
 2. **`lv_menu_page_create(menu, title)`** - Creates a menu page with title
@@ -348,5 +348,5 @@ The implementation follows established patterns from:
 
 ## References
 
-- LVGL v9.4 Menu Documentation: https://docs.lvgl.io/9.4/widgets/menu.html
+- LVGL v9.5 Menu Documentation: https://docs.lvgl.io/9.5/widgets/menu.html
 - ESPHome LVGL Integration: https://esphome.io/components/lvgl/

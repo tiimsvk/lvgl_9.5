@@ -1,0 +1,84 @@
+# =============================================================================
+# Minimal ESPHome host / SDL test config for the youkorr/lvgl_9.5 component
+# -----------------------------------------------------------------------------
+# Goal: build & run the LVGL component on a desktop (no ESP32) through SDL,
+# to validate the host/SDL compile fixes.
+#
+# Requirements on the build machine:
+#   - ESPHome installed
+#   - SDL2 dev libs:  sudo apt-get install libsdl2-dev   (Debian/Ubuntu)
+#   - Build:  esphome compile lvgl-sdl-test.yaml
+#     Run:    esphome run lvgl-sdl-test.yaml   (opens an SDL window)
+#
+# NOTE: I could not run this in my own environment (no host toolchain), so the
+# SDL display options below may need a tweak for your ESPHome version — adjust
+# and tell me the error if any.
+# =============================================================================
+
+esphome:
+  name: lvgl-sdl-test
+  platformio_options:
+    build_flags:
+      - '-DLV_USE_OS=0'        # no FreeRTOS on the host target
+      # (No -include <chrono> needed: the component now includes <chrono> itself.)
+
+# Run on the desktop / native target instead of an MCU
+host:
+
+logger:
+  level: DEBUG
+
+# Pull the LVGL component from the fork (branch with the host/SDL fixes)
+external_components:
+  - source:
+      type: git
+      url: https://github.com/youkorr/lvgl_9.5
+      ref: claude/jolly-lamport-ERZOC
+    components: [lvgl]
+    refresh: 0s
+
+# SDL desktop display (provided by ESPHome's host support)
+display:
+  - platform: sdl
+    id: sdl_display
+    dimensions:
+      width: 320
+      height: 240
+    update_interval: 16ms        # ~60 FPS
+
+# Optional: mouse as a pointer device so you can click widgets
+# (uncomment if your ESPHome version supports the sdl touchscreen/pointer)
+# touchscreen:
+#   - platform: sdl
+#     id: sdl_touch
+#     display: sdl_display
+
+lvgl:
+  displays:
+    - sdl_display
+  # use_ppa / fps_benchmark are ESP32-only and auto-disabled on host.
+  pages:
+    - id: main_page
+      widgets:
+        - obj:
+            align: CENTER
+            width: 280
+            height: 180
+            bg_color: 0x1E1E2E
+            border_width: 0
+            widgets:
+              - label:
+                  align: TOP_MID
+                  y: 10
+                  text: "Hello from SDL!"
+                  text_color: 0xFFFFFF
+              - button:
+                  align: CENTER
+                  width: 160
+                  height: 50
+                  widgets:
+                    - label:
+                        align: CENTER
+                        text: "Click me"
+                  on_click:
+                    - logger.log: "Button clicked on the SDL window!"

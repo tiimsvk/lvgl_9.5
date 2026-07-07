@@ -155,7 +155,7 @@ esp32:
       DCONFIG_USE_AUDIO_AAC_SUPPORT: "y"
       #DCONFIG_ESP_JPG_DECODE_ENABLE: "y"
       #DCONFIG_ESPHOME_ENABLE_PNGLE: "1"
-      CONFIG_SPIRAM_SPEED_200M: "y"  # ← NOUVEAU: 200 MHz au lieu de défaut
+      CONFIG_SPIRAM_SPEED_200M: "y"  # ← NEW: 200 MHz instead of default
       CONFIG_SPIRAM_SPEED: "200"
       CONFIG_LWIP_SOCKET: "y"
       CONFIG_LWIP_MAX_SOCKETS: "16"
@@ -315,15 +315,15 @@ draggable_grid:
   cell_w: 150
   cell_h: 100
   cells:
-    - [10, 220]     # case 0 : col 0, row 0
-    - [200, 220]    # case 1 : col 1, row 0
-    - [380, 220]    # case 2 : col 2, row 0
-    - [10, 345]     # case 3 : col 0, row 1
-    - [200, 345]    # case 4 : col 1, row 1
-    - [380, 345]    # case 5 : col 2, row 1
-    - [10, 480]     # case 6 : col 0, row 2
-    - [200, 480]    # case 7 : col 1, row 2
-    - [380, 480]    # case 8 : col 2, row 2
+    - [10, 220]     # cell 0 : col 0, row 0
+    - [200, 220]    # cell 1 : col 1, row 0
+    - [380, 220]    # cell 2 : col 2, row 0
+    - [10, 345]     # cell 3 : col 0, row 1
+    - [200, 345]    # cell 4 : col 1, row 1
+    - [380, 345]    # cell 5 : col 2, row 1
+    - [10, 480]     # cell 6 : col 0, row 2
+    - [200, 480]    # cell 7 : col 1, row 2
+    - [380, 480]    # cell 8 : col 2, row 2
   buttons:
     - btn_light
     - btn_alarm
@@ -353,11 +353,11 @@ draggable_grid:
     #page_id: orb_page
     #x: 312
     #y: 100
-    #mode: DYSON        # nouveau
+    #mode: DYSON        # new
     #meridians: 12
     #parallels: 5
     #color: 0xA66BFF 
-    #fps: 60   # violet du lattice
+    #fps: 60   # lattice violet
 
 #sphere_viz:
   #- id: voice_orb
@@ -368,8 +368,8 @@ draggable_grid:
     #y: 100 
     #width: 500
     #height: 500
-    #fps: 60  # nombre de panneaux triangulaires (20-500)
-    #color: 0xA66BFF   # inutile en DYSON — la palette est fixe pour l'effet
+    #fps: 60  # number of triangular panels (20-500)
+    #color: 0xA66BFF   # unused in DYSON — the palette is fixed for the effect
 
 #sphere_viz:
   #- id: voice_orb
@@ -423,13 +423,13 @@ esp_video:
 esp_cam_sensor:
   id: tab5_cam
   i2c_id: bsp_bus
-  sensor_type: ov5647        #"sensor_type" au lieu de "sensor"
+  sensor_type: ov5647        #"sensor_type" instead of "sensor"
   resolution: "800x640"          # , 1024x600 ,vga
   pixel_format: "RGB565"      # Zero-copy 
   framerate: 30
   jpeg_quality: 15
-  mirror_x: false    # Flip horizontal (hardware)
-  mirror_y: false      # Flip vertical
+  mirror_x: false    # Horizontal flip (hardware)
+  mirror_y: false      # Vertical flip
   rotation: 0          # 0/90/180/270°
   crop_offset_x: 0     # Crop pixels from left
  
@@ -464,7 +464,7 @@ network_camera:
 
 #network_camera:
   #- id: security_cam_1
-    #url: "http://192.168.1.38:1984/api/frame.jpeg?src=frigate1&width=320&height=240"  # URL MJPEG (à vérifier)
+    #url: "http://192.168.1.38:1984/api/frame.jpeg?src=frigate1&width=320&height=240"  # MJPEG URL (to verify)
     #protocol: mjpeg
     #width: 320
     #height: 240
@@ -507,7 +507,7 @@ network_camera:
 
 
 # ============================================================================
-# Serveur Web HTTP (streaming MJPEG + snapshots)
+# HTTP Web Server (MJPEG streaming + snapshots)
 # ============================================================================
 #camera_web_server:
   #id: web_cam_srv

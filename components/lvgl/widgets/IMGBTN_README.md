@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation provides full support for the LVGL v9.4 Image Button widget (`lv_imagebutton`) in ESPHome. The Image Button widget creates buttons that display different images based on their state (released, pressed, disabled, checked).
+This implementation provides full support for the LVGL v9.5 Image Button widget (`lv_imagebutton`) in ESPHome. The Image Button widget creates buttons that display different images based on their state (released, pressed, disabled, checked).
 
 ## File Location
 
@@ -10,9 +10,9 @@ This implementation provides full support for the LVGL v9.4 Image Button widget 
 
 ## Implementation Details
 
-### LVGL v9.4 API Support
+### LVGL v9.5 API Support
 
-The implementation uses the following LVGL v9.4 API functions:
+The implementation uses the following LVGL v9.5 API functions:
 
 1. **`lv_imagebutton_create(parent)`** - Creates the image button widget
 2. **`lv_imagebutton_set_src(obj, state, src_left, src_mid, src_right)`** - Sets images for different button states
@@ -453,7 +453,7 @@ lvgl:
 
 ## References
 
-- [LVGL v9.4 Image Button Documentation](https://docs.lvgl.io/9.4/details/widgets/imagebutton.html)
+- [LVGL v9.5 Image Button Documentation](https://docs.lvgl.io/9.5/details/widgets/imagebutton.html)
 - [ESPHome Image Component](https://esphome.io/components/image.html)
 
 ---

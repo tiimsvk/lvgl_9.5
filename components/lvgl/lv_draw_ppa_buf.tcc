@@ -1,6 +1,6 @@
 /**
  * @file lv_draw_ppa_buf.c
- * Fixed PPA buffer cache handling for LVGL 9.4 on ESP32-P4
+ * Fixed PPA buffer cache handling for LVGL 9.5 on ESP32-P4
  * Backported from https://github.com/lvgl/lvgl/pull/9162
  * Adapted for C++ compilation (ESPHome build system)
  *

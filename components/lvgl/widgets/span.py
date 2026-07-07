@@ -1,5 +1,5 @@
 """
-LVGL v9.4 Spangroup Widget Implementation
+LVGL v9.5 Spangroup Widget Implementation
 
 The spangroup widget displays text with multiple styles (spans) within the same label.
 Each span can have different font, color, and decoration.

@@ -1,4 +1,4 @@
-"""LVGL v9.4 Scale Widget Implementation for ESPHome
+"""LVGL v9.5 Scale Widget Implementation for ESPHome
 
 The scale widget is a versatile component for displaying measurement scales in various orientations.
 It replaces the obsolete meter widget from LVGL v8.x and provides more flexibility.
