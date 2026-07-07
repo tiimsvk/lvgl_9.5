@@ -20,7 +20,7 @@ static void lv_draw_img_ppa_core(lv_draw_task_t * t, const lv_draw_image_dsc_t *
                                  const lv_area_t * img_coords, const lv_area_t * clipped_img_area);
 
 
-void lv_draw_ppa_img(lv_draw_task_t * t, const lv_draw_image_dsc_t * dsc,
+static inline void lv_draw_ppa_img(lv_draw_task_t * t, const lv_draw_image_dsc_t * dsc,
                      const lv_area_t * coords)
 {
     if(dsc->opa <= (lv_opa_t)LV_OPA_MIN)
@@ -118,7 +118,7 @@ static void lv_draw_img_ppa_core(lv_draw_task_t * t, const lv_draw_image_dsc_t *
 
 #ifdef LV_USE_PPA_IMG
 
-void lv_draw_ppa_img_srm(lv_draw_task_t * t, const lv_draw_image_dsc_t * dsc,
+static inline void lv_draw_ppa_img_srm(lv_draw_task_t * t, const lv_draw_image_dsc_t * dsc,
                           const lv_area_t * coords)
 {
     if(dsc->opa <= (lv_opa_t)LV_OPA_MIN) return;
@@ -298,7 +298,7 @@ void lv_draw_ppa_img_srm(lv_draw_task_t * t, const lv_draw_image_dsc_t * dsc,
  * PPA SRM hardware-accelerated image rotation (0/90/180/270 degrees)
  * Uses the ESP32-P4 PPA Scale-Rotate-Mirror engine for zero-CPU-cost rotation.
  */
-void lv_draw_ppa_img_rotate(lv_draw_task_t * t, const lv_draw_image_dsc_t * dsc,
+static inline void lv_draw_ppa_img_rotate(lv_draw_task_t * t, const lv_draw_image_dsc_t * dsc,
                             const lv_area_t * coords)
 {
     if(dsc->opa <= (lv_opa_t)LV_OPA_MIN)
