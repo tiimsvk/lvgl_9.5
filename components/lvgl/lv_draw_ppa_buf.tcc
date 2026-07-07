@@ -43,14 +43,14 @@ static void ppa_buf_free(void * buf)
  *   GLOBAL FUNCTIONS
  **********************/
 
-void lv_draw_buf_ppa_init_handlers(void)
+static inline void lv_draw_buf_ppa_init_handlers(void)
 {
     lv_draw_buf_handlers_t * h = lv_draw_buf_get_handlers();
     h->buf_malloc_cb = ppa_buf_malloc;
     h->buf_free_cb   = ppa_buf_free;
 }
 
-void lv_draw_ppa_cache_sync(lv_draw_buf_t * buf)
+static inline void lv_draw_ppa_cache_sync(lv_draw_buf_t * buf)
 {
     if(buf == NULL || buf->data == NULL || buf->data_size == 0) return;
 
